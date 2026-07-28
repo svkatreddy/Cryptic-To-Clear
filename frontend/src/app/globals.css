@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+:root {
+  /* Core surfaces — deep editor navy, not pure black */
+  --bg: #0a0d13;
+  --bg-elevated: #10141c;
+  --panel: #12161f;
+  --panel-glass: rgba(18, 22, 31, 0.55);
+  --border: rgba(148, 163, 184, 0.12);
+  --border-strong: rgba(148, 163, 184, 0.22);
+
+  /* Text */
+  --ink: #dbe2ea;
+  --ink-dim: #8993a4;
+  --ink-faint: #565f6f;
+
+  /* Syntax-inspired accent system (the whole point: this is a compiler) */
+  --syn-keyword: #b892ff;   /* violet — keywords */
+  --syn-function: #6cb6ff;  /* blue — functions/calls */
+  --syn-string: #9ee6a8;    /* green — strings/success */
+  --syn-const: #ff9d6c;     /* amber-orange — constants/errors */
+  --syn-cursor: #ffd866;    /* yellow — blinking caret */
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+/* Light theme — same variable set, so every component built on these
+   tokens (which is all of them) adapts with zero component changes. */
+:root.light {
+  --bg: #f4f6f9;
+  --bg-elevated: #ffffff;
+  --panel: #ffffff;
+  --panel-glass: rgba(255, 255, 255, 0.68);
+  --border: rgba(15, 23, 42, 0.10);
+  --border-strong: rgba(15, 23, 42, 0.20);
+
+  --ink: #1b2230;
+  --ink-dim: #4d5866;
+  --ink-faint: #8891a0;
+
+  --syn-keyword: #8250df;
+  --syn-function: #0969da;
+  --syn-string: #1a7f37;
+  --syn-const: #cf5b17;
+  --syn-cursor: #9a6700;
+}
+
+:root.light ::selection {
+  background: rgba(130, 80, 223, 0.22);
+  color: #111;
+}
+
+:root.light ::-webkit-scrollbar-thumb {
+  background: #d3d9e3;
+}
+:root.light ::-webkit-scrollbar-thumb:hover {
+  background: #b9c1cf;
+}
+
+:root.light .blob {
+  opacity: 0.16;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* Glassmorphism panel */
+.glass {
+  background: var(--panel-glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--border);
+}
+
+.glass-strong {
+  background: rgba(18, 22, 31, 0.75);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--border-strong);
+}
+
+/* Faint editor grid texture for background atmosphere */
+.editor-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(100deg, #b892ff 0%, #6cb6ff 55%, #9ee6a8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Ambient gradient blobs */
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+@keyframes blink-caret {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.caret {
+  animation: blink-caret 1.1s steps(1) infinite;
+}
+
+@keyframes drift {
+  0%   { transform: translate(0px, 0px) rotate(var(--tilt, 0deg)); }
+  50%  { transform: translate(10px, -16px) rotate(calc(var(--tilt, 0deg) + 1.5deg)); }
+  100% { transform: translate(0px, 0px) rotate(var(--tilt, 0deg)); }
+}
+.drift {
+  animation: drift 7s ease-in-out infinite;
+}
+
+/* GitHub-style "changed line" highlight applied to the Monaco editor after
+   Apply AI Fix. Monaco injects these as literal class names on the line. */
+.diff-line-added {
+  background: rgba(46, 160, 67, 0.15) !important;
+}
+.diff-line-added-gutter::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--syn-string);
+}
+
+/* Visual Debugger: currently-executing line, VS Code debugger style. */
+.debug-current-line {
+  background: rgba(255, 216, 102, 0.14) !important;
+  border-left: 2px solid var(--syn-cursor);
+}
+.debug-current-line-glyph::before {
+  content: "▶";
+  color: var(--syn-cursor);
+  font-size: 11px;
+  position: relative;
+  left: 4px;
+}
+
+::selection {
+  background: rgba(184, 146, 255, 0.35);
+  color: #fff;
+}
+
+/* Custom scrollbar to match theme */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #262c38; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #333b4a; }
