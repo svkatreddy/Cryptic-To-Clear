@@ -1,59 +1,61 @@
 const axios = require("axios");
 const env = require("../config/env");
 
-const client = axios.create({
-  baseURL: env.openai.baseUrl,
-  timeout: env.openai.requestTimeoutMs,
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${env.openai.apiKey}`,
-  },
-});
+function createAIClient(baseUrl, timeout, apiKey) {
+  return axios.create({
+    baseURL: baseUrl,
+    timeout,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+}
 
-const groqClient = axios.create({
-  baseURL: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
-  timeout: Number(process.env.GROQ_TIMEOUT_MS || 30000),
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${process.env.GROQ_API_KEY || ""}`,
-  },
-});
-
-async function requestWithFallback({ model, messages, temperature, responseFormat, isChat }) {
+function buildProviderList() {
   const providers = [];
 
-  if (env.openai.apiKey) {
+  env.nvidia.apiKeys.forEach((apiKey, index) => {
     providers.push({
-      client,
-      name: "nvidia",
-      baseUrl: env.openai.baseUrl,
-      model,
-      headers: { Authorization: `Bearer ${env.openai.apiKey}` },
+      client: createAIClient(env.nvidia.baseUrl, env.nvidia.requestTimeoutMs, apiKey),
+      name: `nvidia-${index + 1}`,
+      model: env.nvidia.model,
+      path: "/chat/completions",
     });
-  }
+  });
 
-  if (process.env.GROQ_API_KEY) {
+  env.gemini.apiKeys.forEach((apiKey, index) => {
     providers.push({
-      client: groqClient,
-      name: "groq",
-      baseUrl: groqClient.defaults.baseURL,
-      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-      headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      client: createAIClient(env.gemini.baseUrl, env.gemini.requestTimeoutMs, apiKey),
+      name: `gemini-${index + 1}`,
+      model: env.gemini.model,
+      path: "/chat/completions",
     });
-  }
+  });
 
+  return providers;
+}
+
+function ensureAIProviderConfigured() {
+  const providers = buildProviderList();
   if (!providers.length) {
     const err = new Error("No AI provider configured");
     err.status = 503;
-    err.publicMessage = "No AI provider is configured. Set OPENAI_API_KEY or GROQ_API_KEY.";
+    err.publicMessage =
+      "No AI provider is configured. Set NVIDIA_API_KEY or GEMINI_API_KEY in backend/.env.";
     throw err;
   }
+  return providers;
+}
+
+async function requestWithFallback({ model, messages, temperature, responseFormat }) {
+  const providers = ensureAIProviderConfigured();
 
   let lastError;
   for (const provider of providers) {
     try {
       const payload = {
-        model: provider.model,
+        model: model || provider.model,
         temperature,
         messages,
       };
@@ -62,16 +64,7 @@ async function requestWithFallback({ model, messages, temperature, responseForma
         payload.response_format = responseFormat;
       }
 
-      if (isChat) {
-        const { data } = await provider.client.post("/chat/completions", payload);
-        const content = data?.choices?.[0]?.message?.content;
-        if (!content) {
-          throw new Error("Provider returned an empty response");
-        }
-        return { data, content, providerName: provider.name };
-      }
-
-      const { data } = await provider.client.post("/chat/completions", payload);
+      const { data } = await provider.client.post(provider.path, payload);
       const content = data?.choices?.[0]?.message?.content;
       if (!content) {
         throw new Error("Provider returned an empty response");
@@ -85,7 +78,8 @@ async function requestWithFallback({ model, messages, temperature, responseForma
   const err = lastError || new Error("AI provider failed");
   err.status = 502;
   err.service = "openai";
-  err.publicMessage = "The AI service failed and no fallback provider was available.";
+  err.publicMessage =
+    "The AI service failed and no fallback provider was available.";
   throw err;
 }
 
@@ -182,17 +176,8 @@ function buildUserPrompt({ language, error, sourceCode }) {
  * normalized explanation object matching EXPLANATION_SCHEMA's properties.
  */
 async function explainError({ language, error, sourceCode }) {
-  if (!env.openai.apiKey) {
-    const err = new Error("OpenAI API key not configured");
-    err.status = 503;
-    err.publicMessage =
-      "AI explanations aren't configured yet. Set OPENAI_API_KEY in backend/.env.";
-    throw err;
-  }
-
   try {
     const { content } = await requestWithFallback({
-      model: env.openai.model,
       temperature: 0.3,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -202,7 +187,6 @@ async function explainError({ language, error, sourceCode }) {
         type: "json_schema",
         json_schema: EXPLANATION_SCHEMA,
       },
-      isChat: true,
     });
 
     return JSON.parse(content);
@@ -227,14 +211,6 @@ const CHAT_SYSTEM_PROMPT =
  * reply as plain text — no forced schema, this is free-form chat.
  */
 async function chatReply({ language, sourceCode, messages }) {
-  if (!env.openai.apiKey && !process.env.GROQ_API_KEY) {
-    const err = new Error("AI API key not configured");
-    err.status = 503;
-    err.publicMessage =
-      "The AI chat isn't configured yet. Set OPENAI_API_KEY or GROQ_API_KEY in backend/.env.";
-    throw err;
-  }
-
   const contextMessage = {
     role: "system",
     content: `The user is currently editing a ${language} file. Current editor content:\n\n\`\`\`${language}\n${
@@ -244,14 +220,12 @@ async function chatReply({ language, sourceCode, messages }) {
 
   try {
     const { content } = await requestWithFallback({
-      model: env.openai.model,
       temperature: 0.4,
       messages: [
         { role: "system", content: CHAT_SYSTEM_PROMPT },
         contextMessage,
         ...messages,
       ],
-      isChat: true,
     });
 
     return content;
@@ -399,31 +373,22 @@ function buildAnalysisPrompt({ language, sourceCode }) {
  * structured code-quality analysis matching ANALYSIS_SCHEMA.
  */
 async function analyzeCode({ language, sourceCode }) {
-  if (!env.openai.apiKey) {
-    const err = new Error("OpenAI API key not configured");
-    err.status = 503;
-    err.publicMessage =
-      "The Code Quality Analyzer isn't configured yet. Set OPENAI_API_KEY in backend/.env.";
-    throw err;
-  }
-
   try {
-    const { data } = await client.post("/chat/completions", {
-      model: env.openai.model,
+    const { content } = await requestWithFallback({
       temperature: 0.2,
       messages: [
         { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
         { role: "user", content: buildAnalysisPrompt({ language, sourceCode }) },
       ],
-      response_format: {
+      responseFormat: {
         type: "json_schema",
         json_schema: ANALYSIS_SCHEMA,
       },
     });
 
-    const raw = data?.choices?.[0]?.message?.content;
+    const raw = content;
     if (!raw) {
-      const err = new Error("OpenAI returned an empty response");
+      const err = new Error("AI returned an empty response");
       err.status = 502;
       err.publicMessage = "The AI service returned an empty response. Please try again.";
       throw err;
@@ -548,31 +513,22 @@ function buildTracePrompt({ language, sourceCode, stdin }) {
  * simulated step-by-step execution trace matching TRACE_SCHEMA.
  */
 async function generateTrace({ language, sourceCode, stdin }) {
-  if (!env.openai.apiKey) {
-    const err = new Error("OpenAI API key not configured");
-    err.status = 503;
-    err.publicMessage =
-      "The Visual Debugger isn't configured yet. Set OPENAI_API_KEY in backend/.env.";
-    throw err;
-  }
-
   try {
-    const { data } = await client.post("/chat/completions", {
-      model: env.openai.model,
+    const { content } = await requestWithFallback({
       temperature: 0.2,
       messages: [
         { role: "system", content: TRACE_SYSTEM_PROMPT },
         { role: "user", content: buildTracePrompt({ language, sourceCode, stdin }) },
       ],
-      response_format: {
+      responseFormat: {
         type: "json_schema",
         json_schema: TRACE_SCHEMA,
       },
     });
 
-    const raw = data?.choices?.[0]?.message?.content;
+    const raw = content;
     if (!raw) {
-      const err = new Error("OpenAI returned an empty response");
+      const err = new Error("AI returned an empty response");
       err.status = 502;
       err.publicMessage = "The AI service returned an empty response. Please try again.";
       throw err;
@@ -698,31 +654,22 @@ function buildLearningPrompt({ language, sourceCode }) {
  * structured Learning Mode teaching package matching LEARNING_SCHEMA.
  */
 async function generateLearningContent({ language, sourceCode }) {
-  if (!env.openai.apiKey) {
-    const err = new Error("OpenAI API key not configured");
-    err.status = 503;
-    err.publicMessage =
-      "Learning Mode isn't configured yet. Set OPENAI_API_KEY in backend/.env.";
-    throw err;
-  }
-
   try {
-    const { data } = await client.post("/chat/completions", {
-      model: env.openai.model,
+    const { content } = await requestWithFallback({
       temperature: 0.4,
       messages: [
         { role: "system", content: LEARNING_SYSTEM_PROMPT },
         { role: "user", content: buildLearningPrompt({ language, sourceCode }) },
       ],
-      response_format: {
+      responseFormat: {
         type: "json_schema",
         json_schema: LEARNING_SCHEMA,
       },
     });
 
-    const raw = data?.choices?.[0]?.message?.content;
+    const raw = content;
     if (!raw) {
-      const err = new Error("OpenAI returned an empty response");
+      const err = new Error("AI returned an empty response");
       err.status = 502;
       err.publicMessage = "The AI service returned an empty response. Please try again.";
       throw err;
@@ -801,17 +748,8 @@ function buildConversionPrompt({ sourceLanguage, targetLanguage, sourceCode }) {
  * was preserved, key language differences, and any caveats.
  */
 async function convertCode({ sourceLanguage, targetLanguage, sourceCode }) {
-  if (!env.openai.apiKey) {
-    const err = new Error("OpenAI API key not configured");
-    err.status = 503;
-    err.publicMessage =
-      "Code Conversion isn't configured yet. Set OPENAI_API_KEY in backend/.env.";
-    throw err;
-  }
-
   try {
-    const { data } = await client.post("/chat/completions", {
-      model: env.openai.model,
+    const { content } = await requestWithFallback({
       temperature: 0.2,
       messages: [
         { role: "system", content: CONVERSION_SYSTEM_PROMPT },
@@ -820,15 +758,15 @@ async function convertCode({ sourceLanguage, targetLanguage, sourceCode }) {
           content: buildConversionPrompt({ sourceLanguage, targetLanguage, sourceCode }),
         },
       ],
-      response_format: {
+      responseFormat: {
         type: "json_schema",
         json_schema: CONVERSION_SCHEMA,
       },
     });
 
-    const raw = data?.choices?.[0]?.message?.content;
+    const raw = content;
     if (!raw) {
-      const err = new Error("OpenAI returned an empty response");
+      const err = new Error("AI returned an empty response");
       err.status = 502;
       err.publicMessage = "The AI service returned an empty response. Please try again.";
       throw err;
@@ -890,17 +828,8 @@ function buildExecutionPrompt({ language, sourceCode, stdin }) {
 }
 
 async function runCode({ language, sourceCode, stdin }) {
-  if (!env.openai.apiKey && !process.env.GROQ_API_KEY) {
-    const err = new Error("AI API key not configured");
-    err.status = 503;
-    err.publicMessage =
-      "Code execution via AI isn't configured yet. Set OPENAI_API_KEY or GROQ_API_KEY in backend/.env.";
-    throw err;
-  }
-
   try {
     const { content } = await requestWithFallback({
-      model: env.openai.model,
       temperature: 0.1,
       messages: [
         { role: "system", content: EXECUTION_SYSTEM_PROMPT },

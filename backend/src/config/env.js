@@ -27,12 +27,27 @@ const env = {
     requestTimeoutMs: Number(process.env.JUDGE0_TIMEOUT_MS) || 20000,
   },
 
-  // OpenAI connection, used to explain compiler errors.
-  openai: {
-    apiKey: process.env.OPENAI_API_KEY || "",
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-    baseUrl: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
-    requestTimeoutMs: Number(process.env.OPENAI_TIMEOUT_MS) || 30000,
+  // AI provider configuration.
+  // NVIDIA is the primary provider with Gemini as the fallback.
+  nvidia: {
+    apiKeys: [
+      process.env.NVIDIA_API_KEY,
+      process.env.NVIDIA_API_KEY_PRIMARY,
+      process.env.NVIDIA_API_KEY_SECONDARY,
+    ].filter(Boolean),
+    model: process.env.NVIDIA_MODEL || "nvidia/nemotron-3-ultra-550b-a55b",
+    baseUrl: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1",
+    requestTimeoutMs: Number(process.env.NVIDIA_TIMEOUT_MS) || 30000,
+  },
+  gemini: {
+    apiKeys: [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_PRIMARY,
+      process.env.GEMINI_API_KEY_SECONDARY,
+    ].filter(Boolean),
+    model: process.env.GEMINI_MODEL || "gemini-1.5-pro",
+    baseUrl: process.env.GEMINI_BASE_URL || "https://api.generativeai.google/v1",
+    requestTimeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) || 30000,
   },
 };
 

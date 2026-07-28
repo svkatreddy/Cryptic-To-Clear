@@ -11,7 +11,7 @@ const explainRoutes = require("./routes/explain.routes");
 const chatRoutes = require("./routes/chat.routes");
 const analyzeRoutes = require("./routes/analyze.routes");
 const debugRoutes = require("./routes/debug.routes");
-const learnRoutes = require("./routes/learn.routes");
+const learnRoutes = require("./services/learn.routes");
 const convertRoutes = require("./routes/convert.routes");
 
 const app = express();

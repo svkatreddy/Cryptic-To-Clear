@@ -8,7 +8,9 @@
  * naturally regardless of which one failed.
  */
 function serviceLabel(err) {
-  return err.service === "openai" ? "AI service" : "code execution engine";
+  return err.service === "openai" || err.service === "ai"
+    ? "AI service"
+    : "code execution engine";
 }
 
 function errorHandler(err, req, res, _next) {
