@@ -1,12 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { ArrowRight, PlayCircle, Loader2 } from "lucide-react";
 import EditorMockup from "./EditorMockup";
 import FloatingSnippets from "./FloatingSnippets";
 
 export default function Hero() {
+  const router = useRouter();
+  const [navigating, setNavigating] = useState(false);
+
+  useEffect(() => {
+    // Eagerly prefetch compiler assets as soon as home page loads
+    router.prefetch("/compiler");
+  }, [router]);
+
+  const handleStartCoding = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setNavigating(true);
+    router.push("/compiler");
+  };
   return (
     <section className="relative pt-32 sm:pt-40 pb-24 sm:pb-32 overflow-hidden editor-grid">
       {/* Ambient gradient blobs */}
@@ -59,10 +74,21 @@ export default function Hero() {
           >
             <Link
               href="/compiler"
-              className="group inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(108,182,255,0.25)]"
+              prefetch={true}
+              onClick={handleStartCoding}
+              className="group inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(108,182,255,0.25)] cursor-pointer"
             >
-              Start Coding
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              {navigating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <span>Start Coding</span>
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </>
+              )}
             </Link>
             <Link
               href="/features"

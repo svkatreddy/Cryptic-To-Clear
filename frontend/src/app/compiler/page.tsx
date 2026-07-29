@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { GripVertical } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Toolbar from "@/components/compiler/Toolbar";
 import AIPanel from "@/components/compiler/AIPanel";
@@ -37,10 +38,27 @@ import {
   makeId,
 } from "@/lib/chat";
 
-// Heavy, click-triggered surfaces are lazy-loaded — none of them (or their
-// dependencies like mermaid / react-syntax-highlighter) ship in the initial
-// compiler bundle. A lightweight skeleton fills the same modal frame while
-// each chunk downloads, so opening still feels instant rather than blank.
+function EditorSkeleton() {
+  return (
+    <div className="flex h-full w-full flex-col gap-2.5 bg-[#0d1117] p-5 font-mono select-none">
+      <div className="flex items-center gap-2 text-xs text-emerald-400 font-mono mb-2">
+        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+        <span>Loading Editor Engine...</span>
+      </div>
+      {Array.from({ length: 14 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-3 rounded animate-pulse bg-white/5"
+          style={{
+            width: `${[75, 45, 88, 35, 65, 50, 80, 40, 60, 45, 70, 30, 85, 55][i % 14]}%`,
+            animationDelay: `${i * 40}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function ModalSkeleton() {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-8">
@@ -52,6 +70,7 @@ function ModalSkeleton() {
 
 const CodeEditor = dynamic(() => import("@/components/compiler/CodeEditor"), {
   ssr: false,
+  loading: EditorSkeleton,
 });
 const DiffModal = dynamic(() => import("@/components/compiler/DiffModal"), {
   ssr: false,
@@ -99,7 +118,7 @@ function defaultCodeMap(): Record<string, string> {
   return map;
 }
 
-// Judge0 reports time in seconds (as a string, e.g. "0.012") and memory in
+// Execution engine reports time in seconds (as a string, e.g. "0.012") and memory in
 // kilobytes. The UI shows friendlier units.
 function formatTime(time: string | null): string {
   if (!time) return "—";
@@ -114,7 +133,7 @@ function formatMemory(memoryKb: number | null): string {
 }
 
 export default function CompilerPage() {
-  const [language, setLanguage] = useState<string>("javascript");
+  const [language, setLanguage] = useState<string>("c");
   const [codeMap, setCodeMap] = useState<Record<string, string>>(
     defaultCodeMap()
   );
@@ -169,6 +188,7 @@ export default function CompilerPage() {
 
   const [bottomTab, setBottomTab] = useState<BottomTab>("output");
   const [bottomHeight, setBottomHeight] = useState(240);
+  const [aiPanelWidth, setAiPanelWidth] = useState(360);
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [errors, setErrors] = useState("");
@@ -190,6 +210,7 @@ export default function CompilerPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const resizing = useRef(false);
+  const aiResizing = useRef(false);
 
   // Load persisted editor state on mount (one-time hydration from
   // localStorage, which only exists client-side, so an effect is correct here)
@@ -199,7 +220,7 @@ export default function CompilerPage() {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed: PersistedState = JSON.parse(raw);
-        setLanguage(parsed.language ?? "javascript");
+        setLanguage(parsed.language ?? "c");
         setCodeMap({ ...defaultCodeMap(), ...parsed.code });
         setSettings((s) => ({ ...s, ...parsed.settings }));
         setAutoSave(parsed.autoSave ?? true);
@@ -280,16 +301,23 @@ export default function CompilerPage() {
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
 
-  // Bottom panel resize
+  // Layout panel resizers (bottom panel height & AI assistant width)
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (!resizing.current || !containerRef.current) return;
+      if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      const next = rect.bottom - e.clientY;
-      setBottomHeight(Math.min(Math.max(next, 120), rect.height * 0.75));
+      if (resizing.current) {
+        const nextHeight = rect.bottom - e.clientY;
+        setBottomHeight(Math.min(Math.max(nextHeight, 120), rect.height * 0.75));
+      }
+      if (aiResizing.current) {
+        const nextWidth = rect.right - e.clientX;
+        setAiPanelWidth(Math.min(Math.max(nextWidth, 260), Math.floor(rect.width * 0.55)));
+      }
     };
     const onUp = () => {
       resizing.current = false;
+      aiResizing.current = false;
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
@@ -635,6 +663,9 @@ export default function CompilerPage() {
 
   // ---- Run / Compile ------------------------------------------------------
 
+  // Track active execution session inputs so previous run data is never saved or leaked across runs
+  const [sessionInput, setSessionInput] = useState("");
+
   const handleRun = useCallback(async () => {
     if (!currentLang.judge0Supported) {
       setBottomTab("errors");
@@ -645,16 +676,19 @@ export default function CompilerPage() {
       return;
     }
 
+    // Reset session input cleanly on new run
+    setSessionInput("");
     setIsRunning(true);
     setStatus("running");
     setBottomTab("output");
     setOutput("");
     setErrors("");
 
+    // Execute with initial preset input (if any)
     const result = await executeCode({
       language,
       sourceCode: code,
-      stdin: input,
+      stdin: "",
     });
 
     if (!result.success) {
@@ -673,7 +707,7 @@ export default function CompilerPage() {
       ? `Runtime Error:\n${result.runtimeError}`
       : "";
 
-    setOutput(result.output || "Program produced no output.");
+    setOutput(result.output || "");
     setErrors(errorText);
     setExecutionTime(formatTime(result.time));
     setMemoryUsage(formatMemory(result.memory));
@@ -690,7 +724,68 @@ export default function CompilerPage() {
       setStatus("success");
     }
     setIsRunning(false);
-  }, [currentLang, language, code, input, triggerAIExplain]);
+  }, [currentLang, language, code, triggerAIExplain]);
+
+  const handleSubmitTerminalInput = useCallback(
+    async (inputValueLine: string) => {
+      // Accumulate input ONLY for the current active execution session
+      const nextSessionInput = sessionInput.trim()
+        ? `${sessionInput.trim()}\n${inputValueLine}`
+        : inputValueLine;
+
+      setSessionInput(nextSessionInput);
+
+      if (!currentLang.judge0Supported) {
+        setBottomTab("errors");
+        setStatus("error");
+        setErrors(
+          `${currentLang.label} execution isn't connected to the backend yet.`
+        );
+        return;
+      }
+
+      setIsRunning(true);
+      setStatus("running");
+      setBottomTab("output");
+
+      const result = await executeCode({
+        language,
+        sourceCode: code,
+        stdin: nextSessionInput,
+      });
+
+      if (!result.success) {
+        setStatus("error");
+        setBottomTab("errors");
+        setErrors(result.message);
+        setExecutionTime("—");
+        setMemoryUsage("—");
+        setIsRunning(false);
+        return;
+      }
+
+      const errorText = result.compileError
+        ? `Compilation Error:\n${result.compileError}`
+        : result.runtimeError
+        ? `Runtime Error:\n${result.runtimeError}`
+        : "";
+
+      setOutput(result.output || "");
+      setErrors(errorText);
+      setExecutionTime(formatTime(result.time));
+      setMemoryUsage(formatMemory(result.memory));
+
+      if (errorText) {
+        setBottomTab("errors");
+        setStatus("error");
+      } else {
+        setBottomTab("output");
+        setStatus("success");
+      }
+      setIsRunning(false);
+    },
+    [currentLang, language, code, sessionInput]
+  );
 
   const handleCompile = useCallback(async () => {
     if (!currentLang.judge0Supported) {
@@ -1006,15 +1101,17 @@ export default function CompilerPage() {
             </div>
             <div style={{ height: bottomHeight }} className="shrink-0">
               <BottomPanel
-                activeTab={bottomTab}
-                onTabChange={setBottomTab}
-                input={input}
-                onInputChange={setInput}
                 output={output}
                 errors={errors}
-                executionTime={executionTime}
-                memoryUsage={memoryUsage}
                 status={status}
+                onSubmitInput={handleSubmitTerminalInput}
+                onClearOutput={() => {
+                  setOutput("");
+                  setErrors("");
+                  setStatus("idle");
+                  setSessionInput("");
+                }}
+                isRunning={isRunning}
                 onResizeStart={(e) => {
                   e.preventDefault();
                   resizing.current = true;
@@ -1023,24 +1120,40 @@ export default function CompilerPage() {
             </div>
           </div>
 
-          {/* Permanent AI Chat panel — desktop */}
+          {/* Resizable AI Assistant Panel — desktop */}
           {aiPanelOpen && (
-            <div className="hidden md:block w-[320px] shrink-0">
-              <AIPanel
-                messages={messages}
-                busy={chatBusy}
-                inputValue={chatInput}
-                onInputChange={setChatInput}
-                onSend={() => void sendChat(chatInput)}
-                onQuickAction={(prompt) => void sendChat(prompt)}
-                onRetry={handleRetry}
-                getFixState={getFixState}
-                onApplyFix={handleApplyFix}
-                onUndoFix={handleUndoFix}
-                onCompareChanges={handleCompareChanges}
-                inputId="ai-chat-input"
-              />
-            </div>
+            <>
+              {/* Drag handle between Code Editor/Output & AI Panel */}
+              <div
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  aiResizing.current = true;
+                }}
+                className="hidden md:flex w-2 items-center justify-center cursor-col-resize hover:bg-emerald-500/20 active:bg-emerald-500/40 group shrink-0 transition-colors border-l border-white/5 bg-[#0a0d14]"
+              >
+                <GripVertical className="h-4 w-3 text-gray-600 group-hover:text-emerald-400 transition-colors" />
+              </div>
+
+              <div
+                style={{ width: aiPanelWidth }}
+                className="hidden md:block shrink-0 h-full overflow-hidden"
+              >
+                <AIPanel
+                  messages={messages}
+                  busy={chatBusy}
+                  inputValue={chatInput}
+                  onInputChange={setChatInput}
+                  onSend={() => void sendChat(chatInput)}
+                  onQuickAction={(prompt) => void sendChat(prompt)}
+                  onRetry={handleRetry}
+                  getFixState={getFixState}
+                  onApplyFix={handleApplyFix}
+                  onUndoFix={handleUndoFix}
+                  onCompareChanges={handleCompareChanges}
+                  inputId="ai-chat-input"
+                />
+              </div>
+            </>
           )}
         </div>
       </div>

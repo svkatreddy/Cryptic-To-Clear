@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Check, Lock } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { LANGUAGES, LanguageConfig } from "@/lib/languages";
 
 export default function LanguageDropdown({
   value,
   onChange,
-  onlySupported = false,
 }: {
   value: string;
   onChange: (id: LanguageConfig["id"]) => void;
@@ -24,17 +24,14 @@ export default function LanguageDropdown({
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const options = onlySupported
-    ? LANGUAGES.filter((language) => language.judge0Supported)
-    : LANGUAGES;
-  const current = options.find((l) => l.id === value) ?? options[0] ?? LANGUAGES[0];
+  const current = LANGUAGES.find((l) => l.id === value) ?? LANGUAGES[0];
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    const onClick = (e: MouseEvent) => {
+    const onClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
       if (
         ref.current &&
@@ -44,8 +41,8 @@ export default function LanguageDropdown({
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
   useEffect(() => {
@@ -54,28 +51,18 @@ export default function LanguageDropdown({
       return;
     }
 
-    const rect = buttonRef.current.getBoundingClientRect();
-    setMenuPosition({
-      left: rect.left,
-      top: rect.bottom,
-      width: rect.width,
-    });
-  }, [open]);
-
-  useEffect(() => {
-    if (!open || !buttonRef.current) return;
-
     const updatePosition = () => {
       const rect = buttonRef.current?.getBoundingClientRect();
       if (rect) {
         setMenuPosition({
           left: rect.left,
-          top: rect.bottom,
-          width: rect.width,
+          top: rect.bottom + 6,
+          width: Math.max(160, rect.width),
         });
       }
     };
 
+    updatePosition();
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
     return () => {
@@ -90,6 +77,7 @@ export default function LanguageDropdown({
         ref={(el) => {
           buttonRef.current = el;
         }}
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-lg glass px-3 py-2 text-[13px] font-mono hover:border-[var(--border-strong)] transition-colors min-w-[136px]"
       >
@@ -105,50 +93,59 @@ export default function LanguageDropdown({
         />
       </button>
 
-      {mounted && open && menuPosition && (
-        <motion.div
-          ref={menuRef}
-          initial={{ opacity: 0, y: -6, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -6, scale: 0.98 }}
-          transition={{ duration: 0.15 }}
-          className="max-h-80 overflow-y-auto rounded-lg glass-strong p-1.5 shadow-2xl"
-          style={{
-            position: "fixed",
-            left: menuPosition.left,
-            top: menuPosition.top,
-            width: menuPosition.width,
-            zIndex: 9999,
-          }}
-        >
-          {options.map((lang) => (
-            <button
-              key={lang.id}
-              onClick={() => {
-                if (!lang.judge0Supported && onlySupported) return;
-                onChange(lang.id);
-                setOpen(false);
-              }}
-              className={`w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-mono text-left transition-colors ${
-                !lang.judge0Supported && onlySupported
-                  ? "cursor-not-allowed text-[var(--ink-faint)]"
-                  : "hover:bg-white/[0.06]"
-              }`}
-            >
-              <span
-                className="h-2 w-2 rounded-full shrink-0"
-                style={{ background: lang.accent }}
-              />
-              <span className="flex-1 text-[var(--ink)]">{lang.label}</span>
-              {!lang.judge0Supported && onlySupported ? (
-                <Lock className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
-              ) : lang.id === value ? (
-                <Check className="h-3.5 w-3.5 text-[var(--syn-string)]" />
-              ) : null}
-            </button>
-          ))}
-        </motion.div>
-      )}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {open && menuPosition && (
+              <motion.div
+                ref={menuRef}
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.12 }}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="max-h-80 overflow-y-auto rounded-lg p-1.5 shadow-2xl border border-white/10 bg-[#0d1117]/95 backdrop-blur-xl text-white"
+                style={{
+                  position: "fixed",
+                  left: menuPosition.left,
+                  top: menuPosition.top,
+                  minWidth: menuPosition.width,
+                  zIndex: 999999,
+                }}
+              >
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.id}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onChange(lang.id);
+                      setOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-mono text-left transition-colors cursor-pointer hover:bg-white/10 ${
+                      lang.id === value ? "bg-white/15 text-white" : "text-gray-300"
+                    }`}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ background: lang.accent }}
+                    />
+                    <span className="flex-1 font-mono">{lang.label}</span>
+                    {lang.id === value && (
+                      <Check className="h-3.5 w-3.5 text-[var(--syn-string)]" />
+                    )}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </div>
   );
 }

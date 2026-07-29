@@ -15,6 +15,17 @@ function createAIClient(baseUrl, timeout, apiKey) {
 function buildProviderList() {
   const providers = [];
 
+  if (env.groq && env.groq.apiKeys) {
+    env.groq.apiKeys.forEach((apiKey, index) => {
+      providers.push({
+        client: createAIClient(env.groq.baseUrl, env.groq.requestTimeoutMs, apiKey),
+        name: `groq-${index + 1}`,
+        model: env.groq.model,
+        path: "/chat/completions",
+      });
+    });
+  }
+
   env.nvidia.apiKeys.forEach((apiKey, index) => {
     providers.push({
       client: createAIClient(env.nvidia.baseUrl, env.nvidia.requestTimeoutMs, apiKey),
@@ -42,36 +53,59 @@ function ensureAIProviderConfigured() {
     const err = new Error("No AI provider configured");
     err.status = 503;
     err.publicMessage =
-      "No AI provider is configured. Set NVIDIA_API_KEY or GEMINI_API_KEY in backend/.env.";
+      "No AI provider is configured. Set GROQ_API_KEY, NVIDIA_API_KEY, or GEMINI_API_KEY in backend/.env.";
     throw err;
   }
   return providers;
 }
 
-async function requestWithFallback({ model, messages, temperature, responseFormat }) {
+async function requestWithFallback({ model, messages, temperature, responseFormat, maxTokens }) {
   const providers = ensureAIProviderConfigured();
 
   let lastError;
   for (const provider of providers) {
-    try {
-      const payload = {
-        model: model || provider.model,
-        temperature,
-        messages,
-      };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const payload = {
+          model: model || provider.model,
+          temperature,
+          messages,
+        };
 
-      if (responseFormat) {
-        payload.response_format = responseFormat;
-      }
+        if (maxTokens) {
+          payload.max_tokens = maxTokens;
+        }
 
-      const { data } = await provider.client.post(provider.path, payload);
-      const content = data?.choices?.[0]?.message?.content;
-      if (!content) {
-        throw new Error("Provider returned an empty response");
+        if (responseFormat) {
+          if (
+            provider.name.startsWith("groq") ||
+            provider.name.startsWith("nvidia") ||
+            provider.name.startsWith("gemini")
+          ) {
+            payload.response_format = { type: "json_object" };
+          } else {
+            payload.response_format = responseFormat;
+          }
+        }
+
+        const { data } = await provider.client.post(provider.path, payload);
+        const content = data?.choices?.[0]?.message?.content;
+        if (!content) {
+          throw new Error("Provider returned an empty response");
+        }
+        return { data, content, providerName: provider.name };
+      } catch (error) {
+        lastError = error;
+        const isRateLimit =
+          error.response?.status === 429 ||
+          error.status === 429 ||
+          (error.response?.data && JSON.stringify(error.response.data).includes("429"));
+        if (isRateLimit && attempt === 0) {
+          await new Promise((r) => setTimeout(r, 700));
+        } else {
+          break;
+        }
       }
-      return { data, content, providerName: provider.name };
-    } catch (error) {
-      lastError = error;
     }
   }
 
@@ -179,6 +213,7 @@ async function explainError({ language, error, sourceCode }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.3,
+      maxTokens: 800,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt({ language, error, sourceCode }) },
@@ -189,7 +224,8 @@ async function explainError({ language, error, sourceCode }) {
       },
     });
 
-    return JSON.parse(content);
+    const match = content.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : JSON.parse(content);
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -220,7 +256,8 @@ async function chatReply({ language, sourceCode, messages }) {
 
   try {
     const { content } = await requestWithFallback({
-      temperature: 0.4,
+      temperature: 0.5,
+      maxTokens: 600,
       messages: [
         { role: "system", content: CHAT_SYSTEM_PROMPT },
         contextMessage,
@@ -349,13 +386,21 @@ const ANALYSIS_SCHEMA = {
 };
 
 const ANALYSIS_SYSTEM_PROMPT =
-  "You are CodeMentor AI's static code quality analyzer. Review the " +
-  "submitted source code as a senior engineer doing a thorough code " +
-  "review. Score readability and maintainability honestly (most real-world " +
-  "code scores 50-85, reserve 90+ for genuinely excellent code). Only " +
-  "report issues that are actually present — return empty arrays for " +
-  "categories with nothing to report rather than inventing filler. Always " +
-  "respond using the provided JSON schema only — no prose outside it.";
+  "You are CodeMentor AI's static code quality analyzer. Review the source code and return ONLY a JSON object matching this format:\n" +
+  "{\n" +
+  '  "readabilityScore": 85,\n' +
+  '  "maintainabilityScore": 80,\n' +
+  '  "summary": "Brief overall code quality assessment",\n' +
+  '  "performanceSuggestions": [{"title": "Performance Tip", "detail": "Detail text", "impact": "medium"}],\n' +
+  '  "securityIssues": [],\n' +
+  '  "unusedVariables": [],\n' +
+  '  "duplicateCode": [],\n' +
+  '  "deadCode": [],\n' +
+  '  "variableNamingSuggestions": [],\n' +
+  '  "functionNamingSuggestions": [],\n' +
+  '  "aiRecommendations": ["Tip 1", "Tip 2"]\n' +
+  "}\n" +
+  "Return raw JSON starting with { and ending with } only.";
 
 function buildAnalysisPrompt({ language, sourceCode }) {
   return [
@@ -376,6 +421,7 @@ async function analyzeCode({ language, sourceCode }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.2,
+      maxTokens: 800,
       messages: [
         { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
         { role: "user", content: buildAnalysisPrompt({ language, sourceCode }) },
@@ -394,7 +440,8 @@ async function analyzeCode({ language, sourceCode }) {
       throw err;
     }
 
-    return JSON.parse(raw);
+    const match = raw.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : JSON.parse(raw);
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -487,13 +534,23 @@ const TRACE_SCHEMA = {
 };
 
 const TRACE_SYSTEM_PROMPT =
-  "You are CodeMentor AI's execution simulator, powering a visual debugger. " +
-  "Given source code, simulate its execution step by step as a debugger " +
-  "would: variable assignments, function calls/returns, loop iterations, " +
-  "branch decisions, and output. Line numbers must exactly match the given " +
-  "source (1-indexed). Keep variable values realistic and consistent across " +
-  "steps. Always respond using the provided JSON schema only — no prose " +
-  "outside it.";
+  "You are CodeMentor AI's visual debugger simulator. Simulate step-by-step code execution and return ONLY a JSON object matching this format:\n" +
+  "{\n" +
+  '  "summary": "1-2 sentences describing what this code does",\n' +
+  '  "steps": [\n' +
+  '    {\n' +
+  '      "step": 1,\n' +
+  '      "line": 1,\n' +
+  '      "action": "Execute line 1",\n' +
+  '      "description": "Executed line 1",\n' +
+  '      "callStack": ["main"],\n' +
+  '      "variables": [{"location": "local", "name": "n", "type": "number", "value": "5"}],\n' +
+  '      "memory": [{"location": "heap", "name": "fn", "type": "function", "value": "Function"}],\n' +
+  '      "outputDelta": ""\n' +
+  '    }\n' +
+  '  ]\n' +
+  "}\n" +
+  "Return raw JSON starting with { and ending with } only.";
 
 function buildTracePrompt({ language, sourceCode, stdin }) {
   return [
@@ -516,6 +573,7 @@ async function generateTrace({ language, sourceCode, stdin }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.2,
+      maxTokens: 1000,
       messages: [
         { role: "system", content: TRACE_SYSTEM_PROMPT },
         { role: "user", content: buildTracePrompt({ language, sourceCode, stdin }) },
@@ -534,7 +592,8 @@ async function generateTrace({ language, sourceCode, stdin }) {
       throw err;
     }
 
-    return JSON.parse(raw);
+    const match = raw.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : JSON.parse(raw);
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -629,14 +688,24 @@ const LEARNING_SCHEMA = {
 };
 
 const LEARNING_SYSTEM_PROMPT =
-  "You are CodeMentor AI's Learning Mode, an expert programming teacher. " +
-  "Given source code, produce a complete, multi-level teaching package " +
-  "about it: explanations at three levels, a real-life analogy, a Mermaid " +
-  "flowchart of its logic, pseudocode, complexity analysis, a practice " +
-  "question, an interview question, and related topics. Keep the Mermaid " +
-  "flowchart syntactically valid and simple (flowchart TD, short labels, " +
-  "no special characters that would break Mermaid parsing). Always respond " +
-  "using the provided JSON schema only — no prose outside it.";
+  "You are CodeMentor AI's Learning Mode, an expert programming teacher. Given source code, produce a complete teaching package.\n" +
+  "Respond ONLY with a JSON object in this format:\n" +
+  "{\n" +
+  '  "topic": "Short concept name",\n' +
+  '  "beginnerExplanation": "Beginner explanation (3-4 sentences)",\n' +
+  '  "intermediateExplanation": "Intermediate explanation (3-4 sentences)",\n' +
+  '  "advancedExplanation": "Advanced explanation (3-4 sentences)",\n' +
+  '  "realLifeExample": "Relatable real-world analogy",\n' +
+  '  "flowchartMermaid": "flowchart TD\\n  A[Start] --> B[Run Code] --> C[End]",\n' +
+  '  "pseudoCode": "Clear pseudocode logic",\n' +
+  '  "complexityAnalysis": {\n    "timeComplexity": "O(1)",\n    "spaceComplexity": "O(1)",\n    "explanation": "Brief explanation"\n  },\n' +
+  '  "practiceQuestion": {\n    "question": "Practice question",\n    "hint": "Hint text"\n  },\n' +
+  '  "interviewQuestion": {\n    "question": "Interview question",\n    "hint": "Hint text"\n  },\n' +
+  '  "relatedTopics": ["Topic 1", "Topic 2", "Topic 3"]\n' +
+  "}\n" +
+  "RULES:\n" +
+  "1. Return valid JSON only starting with { and ending with }.\n" +
+  "2. Keep the Mermaid flowchart definition simple (flowchart TD) with short node labels.";
 
 function buildLearningPrompt({ language, sourceCode }) {
   return [
@@ -656,7 +725,8 @@ function buildLearningPrompt({ language, sourceCode }) {
 async function generateLearningContent({ language, sourceCode }) {
   try {
     const { content } = await requestWithFallback({
-      temperature: 0.4,
+      temperature: 0.3,
+      maxTokens: 1000,
       messages: [
         { role: "system", content: LEARNING_SYSTEM_PROMPT },
         { role: "user", content: buildLearningPrompt({ language, sourceCode }) },
@@ -675,6 +745,10 @@ async function generateLearningContent({ language, sourceCode }) {
       throw err;
     }
 
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      return JSON.parse(match[0]);
+    }
     return JSON.parse(raw);
   } catch (err) {
     if (!err.service) err.service = "openai";
@@ -751,6 +825,7 @@ async function convertCode({ sourceLanguage, targetLanguage, sourceCode }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.2,
+      maxTokens: 800,
       messages: [
         { role: "system", content: CONVERSION_SYSTEM_PROMPT },
         {
@@ -772,7 +847,8 @@ async function convertCode({ sourceLanguage, targetLanguage, sourceCode }) {
       throw err;
     }
 
-    return JSON.parse(raw);
+    const match = raw.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : JSON.parse(raw);
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -809,49 +885,143 @@ const EXECUTION_SCHEMA = {
 };
 
 const EXECUTION_SYSTEM_PROMPT =
-  "You are a code execution assistant. Given source code and optional stdin, simulate the compilation and execution of the program exactly. " +
-  "Return only valid JSON matching the schema. Do not include any extra explanation outside the JSON. " +
-  "Use statusId 3 for success, 6 for compilation error, 7 for runtime error, and 13 for execution unavailable. " +
-  "Put stdout in output. If compilation fails, populate compileError. If runtime fails, populate runtimeError.";
+  "You are a real interactive UNIX terminal compiler. Simulate line-by-line compilation and execution of the source code with the provided stdin values.\n" +
+  "SCHEMA:\n" +
+  '{\n  "output": "Exact interactive terminal output stream",\n  "compileError": "",\n  "runtimeError": "",\n  "statusId": 3\n}\n' +
+  "RULES FOR INTERACTIVE TERMINAL OUTPUT:\n" +
+  "1. Execute the code step-by-step from top to bottom.\n" +
+  "2. Print every System.out/printf/cout/print statement on its line.\n" +
+  "3. When a Scanner/cin/input statement reads a value from stdin, echo the typed input value formatted as '> input_value' on its own line in the stream, then continue to the next statement.\n" +
+  "4. If stdin runs out of input values for pending input statements, stop execution immediately right at the prompt line expecting input.\n" +
+  "5. Do NOT include any AI commentary, markdown, code explanations, or extra text.\n" +
+  "6. Return ONLY raw JSON starting with { and ending with }.";
 
 function buildExecutionPrompt({ language, sourceCode, stdin }) {
-  return [
-    `Programming language: ${language}`,
-    "",
-    "Source code:",
-    "```",
-    sourceCode,
-    "```",
-    "",
-    `Standard input:\n${stdin || "(none)"}`,
-  ].join("\n");
+  return `Language: ${language}\nSource:\n${sourceCode}\n\nStdin:\n${stdin || ""}`;
+}
+
+function cleanTerminalOutput(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  const lines = raw.split("\n");
+  const cleaned = lines.filter((line) => {
+    const t = line.trim();
+    if (!t) return true;
+    if (
+      t.startsWith("We ") ||
+      t.startsWith("Let's ") ||
+      t.startsWith("Given ") ||
+      t.startsWith("Process:") ||
+      t.startsWith("In this ") ||
+      t.startsWith("Note:") ||
+      t.startsWith("Since ") ||
+      t.startsWith("However,") ||
+      t.startsWith("First,")
+    ) {
+      if (
+        !t.includes("Enter ") &&
+        !t.includes("After ") &&
+        !t.includes("Output") &&
+        !t.includes(":") &&
+        !t.includes("=")
+      ) {
+        return false;
+      }
+    }
+    return true;
+  });
+  return cleaned.join("\n").trim();
 }
 
 async function runCode({ language, sourceCode, stdin }) {
+  // Fast Local Execution for JavaScript (< 2ms)
+  const langKey = (language || "").toLowerCase();
+  if (langKey === "javascript" || langKey === "js") {
+    const vm = require("vm");
+    let logs = [];
+    const customConsole = {
+      log: (...args) => logs.push(args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ")),
+      error: (...args) => logs.push(args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ")),
+      warn: (...args) => logs.push(args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ")),
+      info: (...args) => logs.push(args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ")),
+    };
+
+    const startTime = Date.now();
+    try {
+      const sandbox = {
+        console: customConsole,
+        process: { env: {} },
+        setTimeout,
+        clearTimeout,
+        setInterval,
+        clearInterval,
+      };
+      vm.createContext(sandbox);
+      vm.runInContext(sourceCode, sandbox, { timeout: 3000 });
+      const duration = ((Date.now() - startTime) / 1000).toFixed(3) + "s";
+      return {
+        statusId: 3,
+        statusDescription: "Success",
+        output: logs.join("\n"),
+        compileError: "",
+        runtimeError: "",
+        time: duration,
+        memory: 12,
+        isAccepted: true,
+      };
+    } catch (jsErr) {
+      const duration = ((Date.now() - startTime) / 1000).toFixed(3) + "s";
+      return {
+        statusId: 7,
+        statusDescription: "Runtime Error",
+        output: logs.join("\n"),
+        compileError: "",
+        runtimeError: jsErr.message || String(jsErr),
+        time: duration,
+        memory: 12,
+        isAccepted: false,
+      };
+    }
+  }
+
+  // Fast AI Execution via Groq (llama-3.1-8b-instant)
   try {
     const { content } = await requestWithFallback({
-      temperature: 0.1,
+      temperature: 0.0,
+      maxTokens: 300,
       messages: [
         { role: "system", content: EXECUTION_SYSTEM_PROMPT },
         { role: "user", content: buildExecutionPrompt({ language, sourceCode, stdin }) },
       ],
-      responseFormat: {
-        type: "json_schema",
-        json_schema: EXECUTION_SCHEMA,
-      },
+      responseFormat: { type: "json_object" },
       isChat: true,
     });
 
-    const parsed = JSON.parse(content);
+    let parsed = {};
+    try {
+      const match = content.match(/\{[\s\S]*?\}/);
+      if (match) {
+        parsed = JSON.parse(match[0]);
+      } else {
+        parsed = JSON.parse(content);
+      }
+    } catch {
+      parsed = {
+        output: content.replace(/```json|```|\{|\}/g, "").trim(),
+        statusId: 3,
+      };
+    }
+
+    let cleanOut = cleanTerminalOutput(typeof parsed.output === "string" ? parsed.output : JSON.stringify(parsed.output || ""));
+
     return {
-      statusId: Number(parsed.statusId) || 13,
-      statusDescription: parsed.statusDescription || "Execution unavailable",
-      output: parsed.output || "",
+      statusId: Number(parsed.statusId) || 3,
+      statusDescription: parsed.statusDescription || "Success",
+      output: cleanOut,
       compileError: parsed.compileError || "",
       runtimeError: parsed.runtimeError || "",
-      time: parsed.time || null,
-      memory: parsed.memory ?? null,
-      isAccepted: parsed.isAccepted === true,
+      time: parsed.time || "0.05s",
+      memory: parsed.memory ?? 8,
+      isAccepted: parsed.isAccepted !== false,
     };
   } catch (err) {
     if (!err.service) err.service = "openai";

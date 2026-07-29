@@ -1,12 +1,12 @@
 const { getLanguageConfig } = require("../config/languages");
-const openaiService = require("../services/openai.service");
+const { runCode } = require("../services/openai.service");
 
 /**
  * POST /api/execute
  * Body: { language: string, sourceCode: string, stdin?: string }
  *
- * This single reusable endpoint powers both the editor's "Run" and
- * "Compile" actions by using the AI execution provider.
+ * This endpoint powers both the editor's "Run" and "Compile" actions by
+ * executing code using the Groq AI engine.
  */
 async function execute(req, res, next) {
   try {
@@ -27,15 +27,9 @@ async function execute(req, res, next) {
     }
 
     const langConfig = getLanguageConfig(language);
-    if (!langConfig) {
-      return res.status(400).json({
-        success: false,
-        message: `Execution for "${language}" isn't supported yet.`,
-      });
-    }
 
     try {
-      const executionResult = await openaiService.runCode({
+      const executionResult = await runCode({
         language,
         sourceCode,
         stdin,
@@ -44,7 +38,7 @@ async function execute(req, res, next) {
       return res.status(200).json({
         success: true,
         language,
-        languageType: langConfig.type,
+        languageType: langConfig ? langConfig.type : "interpreted",
         statusId: executionResult.statusId,
         statusDescription: executionResult.statusDescription,
         output: executionResult.output,
@@ -58,7 +52,7 @@ async function execute(req, res, next) {
       const message =
         executionError.publicMessage ||
         executionError.message ||
-        "The code execution engine failed. Check your backend configuration and try again.";
+        "The code execution engine failed. Check your GROQ_API_KEY in backend/.env and try again.";
       return res.status(502).json({ success: false, message });
     }
   } catch (err) {

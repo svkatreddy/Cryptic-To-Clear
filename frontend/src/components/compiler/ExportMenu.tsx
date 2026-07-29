@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileOutput,
@@ -52,16 +53,60 @@ export default function ExportMenu({
   hasExecutionResult,
 }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [justRan, setJustRan] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (
+        ref.current &&
+        !ref.current.contains(target) &&
+        !(menuRef.current && menuRef.current.contains(target))
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  useEffect(() => {
+    if (!open || !buttonRef.current) {
+      setMenuPosition(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (rect) {
+        setMenuPosition({
+          left: rect.left,
+          top: rect.bottom + 6,
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
 
   const run = (key: string, fn: () => void) => {
     fn();
@@ -105,6 +150,10 @@ export default function ExportMenu({
   return (
     <div ref={ref} className="relative">
       <button
+        ref={(el) => {
+          buttonRef.current = el;
+        }}
+        type="button"
         onClick={() => setOpen((v) => !v)}
         title="Export"
         className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono glass hover:border-[var(--border-strong)] transition-colors shrink-0"
@@ -113,34 +162,55 @@ export default function ExportMenu({
         Export
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-64 rounded-lg glass-strong p-1.5 z-50 shadow-2xl"
-          >
-            {items.map((item) => (
-              <button
-                key={item.key}
-                onClick={item.disabled ? undefined : item.onClick}
-                disabled={item.disabled}
-                title={item.disabled ? item.disabledHint : undefined}
-                className="w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[12px] text-left transition-colors hover:bg-white/[0.06] disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {open && menuPosition && (
+              <motion.div
+                ref={menuRef}
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="w-64 rounded-lg p-1.5 shadow-2xl border border-white/10 bg-[#0d1117]/95 backdrop-blur-xl text-white"
+                style={{
+                  position: "fixed",
+                  left: menuPosition.left,
+                  top: menuPosition.top,
+                  zIndex: 999999,
+                }}
               >
-                {justRan === item.key ? (
-                  <Check className="h-3.5 w-3.5 text-[var(--syn-string)] shrink-0" />
-                ) : (
-                  <item.icon className="h-3.5 w-3.5 text-[var(--ink-dim)] shrink-0" />
-                )}
-                <span className="text-[var(--ink)]">{item.label}</span>
-              </button>
-            ))}
-          </motion.div>
+                {items.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!item.disabled) item.onClick();
+                    }}
+                    disabled={item.disabled}
+                    title={item.disabled ? item.disabledHint : undefined}
+                    className="w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[12px] text-left transition-colors hover:bg-white/10 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  >
+                    {justRan === item.key ? (
+                      <Check className="h-3.5 w-3.5 text-[var(--syn-string)] shrink-0" />
+                    ) : (
+                      <item.icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                    )}
+                    <span className="text-gray-200">{item.label}</span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 }

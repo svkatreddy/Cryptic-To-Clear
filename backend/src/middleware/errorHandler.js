@@ -3,14 +3,12 @@
  * asyncHandler) so the frontend always receives a consistent, graceful JSON
  * response instead of a raw stack trace or a hung request.
  *
- * Services that call out to a third party (Judge0, OpenAI) can tag their
- * errors with `err.service` ("judge0" | "openai") so the message here reads
+ * Services that call out to a third party (Groq, OpenAI, Gemini) can tag their
+ * errors with `err.service` ("groq" | "openai" | "ai") so the message here reads
  * naturally regardless of which one failed.
  */
 function serviceLabel(err) {
-  return err.service === "openai" || err.service === "ai"
-    ? "AI service"
-    : "code execution engine";
+  return "AI service";
 }
 
 function errorHandler(err, req, res, _next) {
@@ -19,7 +17,7 @@ function errorHandler(err, req, res, _next) {
 
   const service = serviceLabel(err);
 
-  // Judge0/OpenAI unreachable, DNS failure, connection refused, etc.
+  // AI service unreachable, DNS failure, connection refused, etc.
   if (err.code === "ECONNABORTED") {
     return res.status(504).json({
       success: false,
@@ -34,7 +32,7 @@ function errorHandler(err, req, res, _next) {
     });
   }
 
-  // Axios error with a response from Judge0/OpenAI (e.g. bad request, auth failure)
+  // Axios error with a response from AI service (e.g. bad request, auth failure)
   if (err.response) {
     const status = err.response.status;
     const friendly =

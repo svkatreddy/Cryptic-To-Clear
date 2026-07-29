@@ -512,7 +512,7 @@ export async function explainError(req: ExplainRequest): Promise<ExplainResult> 
 
 /**
  * Calls the Express backend's POST /api/execute endpoint, which in turn
- * compiles + runs the code on Judge0. Never throws for expected failure
+ * compiles + runs the code via the Groq AI engine. Never throws for expected failure
  * cases (bad code, unreachable backend, etc.) — it always resolves to a
  * tagged result so the UI can render it directly.
  */
