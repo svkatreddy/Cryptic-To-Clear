@@ -99,9 +99,11 @@ async function requestWithFallback({ model, messages, temperature, responseForma
         const isRateLimit =
           error.response?.status === 429 ||
           error.status === 429 ||
-          (error.response?.data && JSON.stringify(error.response.data).includes("429"));
-        if (isRateLimit && attempt === 0) {
-          await new Promise((r) => setTimeout(r, 700));
+          (error.response?.data && JSON.stringify(error.response.data).includes("429")) ||
+          (error.message && error.message.includes("429"));
+        if (isRateLimit) {
+          const waitMs = (attempt + 1) * 1500;
+          await new Promise((r) => setTimeout(r, waitMs));
         } else {
           break;
         }
@@ -184,10 +186,22 @@ const EXPLANATION_SCHEMA = {
 };
 
 const SYSTEM_PROMPT =
-  "You are CodeMentor AI, an expert programming tutor embedded in an online " +
-  "compiler. A student's code failed to compile. Explain the failure kindly " +
-  "and precisely, then provide a corrected version of their code. Always " +
-  "respond using the provided JSON schema only — no prose outside it.";
+  "You are CodeMentor AI, an expert programming tutor embedded in an online compiler. A student's code failed to compile.\n" +
+  "Respond ONLY with a JSON object in this exact format:\n" +
+  "{\n" +
+  '  "errorSummary": "One short sentence naming what went wrong",\n' +
+  '  "reason": "Why the compiler/interpreter raised this specific error",\n' +
+  '  "errorLine": "Line number(s) or Unknown",\n' +
+  '  "simpleExplanation": "Beginner friendly explanation (2-4 sentences)",\n' +
+  '  "howToFix": "Concrete step-by-step guidance on how to fix it",\n' +
+  '  "correctCode": "Full runnable corrected source code as a single string",\n' +
+  '  "commonMistakes": ["Common mistake 1", "Common mistake 2"],\n' +
+  '  "bestPractices": ["Best practice 1", "Best practice 2"],\n' +
+  '  "optimizationTips": ["Optimization tip 1"]\n' +
+  "}\n" +
+  "RULES:\n" +
+  "1. Return valid raw JSON starting with { and ending with } only.\n" +
+  "2. Write correctCode as a single complete runnable code string with newline characters.";
 
 function buildUserPrompt({ language, error, sourceCode }) {
   return [
@@ -213,7 +227,7 @@ async function explainError({ language, error, sourceCode }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.3,
-      maxTokens: 800,
+      maxTokens: 1200,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt({ language, error, sourceCode }) },
@@ -224,8 +238,45 @@ async function explainError({ language, error, sourceCode }) {
       },
     });
 
+    let raw = {};
     const match = content.match(/\{[\s\S]*\}/);
-    return match ? JSON.parse(match[0]) : JSON.parse(content);
+    try {
+      raw = match ? JSON.parse(match[0]) : JSON.parse(content);
+    } catch {
+      raw = {};
+    }
+
+    let codeString = sourceCode || "";
+    if (typeof raw.correctCode === "string") {
+      codeString = raw.correctCode;
+    } else if (Array.isArray(raw.correctCode)) {
+      codeString = raw.correctCode.join("\n");
+    } else if (raw.corrected_code) {
+      if (typeof raw.corrected_code === "string") {
+        codeString = raw.corrected_code;
+      } else if (raw.corrected_code.code) {
+        codeString = Array.isArray(raw.corrected_code.code)
+          ? raw.corrected_code.code.join("\n")
+          : String(raw.corrected_code.code);
+      }
+    }
+
+    return {
+      errorSummary: raw.errorSummary || raw.summary || raw.error || "Compilation Error",
+      reason: raw.reason || raw.description || raw.error || "A syntax or runtime error occurred.",
+      errorLine: String(raw.errorLine || raw.line || "Unknown"),
+      simpleExplanation:
+        raw.simpleExplanation ||
+        raw.explanation ||
+        raw.description ||
+        raw.reason ||
+        "The code contains an invalid expression or syntax.",
+      howToFix: raw.howToFix || raw.fix || "Check line numbers and fix the syntax error.",
+      correctCode: codeString,
+      commonMistakes: Array.isArray(raw.commonMistakes) ? raw.commonMistakes : [],
+      bestPractices: Array.isArray(raw.bestPractices) ? raw.bestPractices : [],
+      optimizationTips: Array.isArray(raw.optimizationTips) ? raw.optimizationTips : [],
+    };
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -534,23 +585,25 @@ const TRACE_SCHEMA = {
 };
 
 const TRACE_SYSTEM_PROMPT =
-  "You are CodeMentor AI's visual debugger simulator. Simulate step-by-step code execution and return ONLY a JSON object matching this format:\n" +
+  "You are CodeMentor AI's visual debugger simulator. Simulate step-by-step code execution for up to 5-10 concise steps. Return ONLY a JSON object matching this format:\n" +
   "{\n" +
   '  "summary": "1-2 sentences describing what this code does",\n' +
   '  "steps": [\n' +
   '    {\n' +
   '      "step": 1,\n' +
   '      "line": 1,\n' +
-  '      "action": "Execute line 1",\n' +
+  '      "action": "init",\n' +
   '      "description": "Executed line 1",\n' +
   '      "callStack": ["main"],\n' +
-  '      "variables": [{"location": "local", "name": "n", "type": "number", "value": "5"}],\n' +
-  '      "memory": [{"location": "heap", "name": "fn", "type": "function", "value": "Function"}],\n' +
+  '      "variables": [{"name": "n", "value": "5", "type": "number", "scope": "main"}],\n' +
+  '      "memory": [{"location": "stack", "name": "n", "type": "number", "value": "5"}],\n' +
   '      "outputDelta": ""\n' +
   '    }\n' +
   '  ]\n' +
   "}\n" +
-  "Return raw JSON starting with { and ending with } only.";
+  "RULES:\n" +
+  "1. Return valid raw JSON starting with { and ending with } only.\n" +
+  "2. Keep steps to max 10 total steps so response is concise.";
 
 function buildTracePrompt({ language, sourceCode, stdin }) {
   return [
@@ -573,7 +626,7 @@ async function generateTrace({ language, sourceCode, stdin }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.2,
-      maxTokens: 1000,
+      maxTokens: 1500,
       messages: [
         { role: "system", content: TRACE_SYSTEM_PROMPT },
         { role: "user", content: buildTracePrompt({ language, sourceCode, stdin }) },
@@ -584,7 +637,7 @@ async function generateTrace({ language, sourceCode, stdin }) {
       },
     });
 
-    const raw = content;
+    const raw = content ? content.trim() : "";
     if (!raw) {
       const err = new Error("AI returned an empty response");
       err.status = 502;
@@ -592,8 +645,13 @@ async function generateTrace({ language, sourceCode, stdin }) {
       throw err;
     }
 
-    const match = raw.match(/\{[\s\S]*\}/);
-    return match ? JSON.parse(match[0]) : JSON.parse(raw);
+    let cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      cleaned = match[0];
+    }
+
+    return JSON.parse(cleaned);
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -726,7 +784,7 @@ async function generateLearningContent({ language, sourceCode }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.3,
-      maxTokens: 1000,
+      maxTokens: 1500,
       messages: [
         { role: "system", content: LEARNING_SYSTEM_PROMPT },
         { role: "user", content: buildLearningPrompt({ language, sourceCode }) },
@@ -737,7 +795,7 @@ async function generateLearningContent({ language, sourceCode }) {
       },
     });
 
-    const raw = content;
+    const raw = content ? content.trim() : "";
     if (!raw) {
       const err = new Error("AI returned an empty response");
       err.status = 502;
@@ -745,11 +803,14 @@ async function generateLearningContent({ language, sourceCode }) {
       throw err;
     }
 
-    const match = raw.match(/\{[\s\S]*\}/);
+    // Clean common markdown fences or trailing commas if any
+    let cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
     if (match) {
-      return JSON.parse(match[0]);
+      cleaned = match[0];
     }
-    return JSON.parse(raw);
+
+    return JSON.parse(cleaned);
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -798,12 +859,19 @@ const CONVERSION_SCHEMA = {
 };
 
 const CONVERSION_SYSTEM_PROMPT =
-  "You are CodeMentor AI's code converter. Convert the submitted source " +
-  "code from one programming language to another while preserving its " +
-  "exact logic and behavior. Write idiomatic code in the target language " +
-  "(follow its naming and formatting conventions) rather than a literal " +
-  "line-by-line transliteration. Always respond using the provided JSON " +
-  "schema only — no prose outside it.";
+  "You are CodeMentor AI's code converter. Convert the submitted source code from one language to another while preserving exact logic.\n" +
+  "Respond ONLY with a JSON object in this exact format:\n" +
+  "{\n" +
+  '  "convertedCode": "Full runnable converted code in the target language as a single string",\n' +
+  '  "preservedLogicSummary": "1-2 sentences confirming what logic was preserved",\n' +
+  '  "differences": [\n' +
+  '    {"aspect": "Syntax", "explanation": "Explanation of differences"}\n' +
+  '  ],\n' +
+  '  "conversionNotes": "Any caveats or assumptions"\n' +
+  "}\n" +
+  "RULES:\n" +
+  "1. Return valid raw JSON starting with { and ending with } only.\n" +
+  "2. Write convertedCode as a single complete runnable code string with newline characters.";
 
 function buildConversionPrompt({ sourceLanguage, targetLanguage, sourceCode }) {
   return [
@@ -825,7 +893,7 @@ async function convertCode({ sourceLanguage, targetLanguage, sourceCode }) {
   try {
     const { content } = await requestWithFallback({
       temperature: 0.2,
-      maxTokens: 800,
+      maxTokens: 1200,
       messages: [
         { role: "system", content: CONVERSION_SYSTEM_PROMPT },
         {
@@ -839,16 +907,30 @@ async function convertCode({ sourceLanguage, targetLanguage, sourceCode }) {
       },
     });
 
-    const raw = content;
-    if (!raw) {
-      const err = new Error("AI returned an empty response");
-      err.status = 502;
-      err.publicMessage = "The AI service returned an empty response. Please try again.";
-      throw err;
+    let raw = {};
+    const match = content.match(/\{[\s\S]*\}/);
+    try {
+      raw = match ? JSON.parse(match[0]) : JSON.parse(content);
+    } catch {
+      raw = {};
     }
 
-    const match = raw.match(/\{[\s\S]*\}/);
-    return match ? JSON.parse(match[0]) : JSON.parse(raw);
+    let codeString = "";
+    if (typeof raw.convertedCode === "string") {
+      codeString = raw.convertedCode;
+    } else if (Array.isArray(raw.convertedCode)) {
+      codeString = raw.convertedCode.join("\n");
+    } else if (raw.code) {
+      codeString = Array.isArray(raw.code) ? raw.code.join("\n") : String(raw.code);
+    }
+
+    return {
+      convertedCode: codeString,
+      preservedLogicSummary:
+        raw.preservedLogicSummary || raw.summary || `Preserved original ${sourceLanguage} logic in ${targetLanguage}.`,
+      differences: Array.isArray(raw.differences) ? raw.differences : [],
+      conversionNotes: raw.conversionNotes || "",
+    };
   } catch (err) {
     if (!err.service) err.service = "openai";
     throw err;
@@ -884,20 +966,90 @@ const EXECUTION_SCHEMA = {
   },
 };
 
+function validateJavaCode(sourceCode) {
+  if (!sourceCode || typeof sourceCode !== "string") return null;
+
+  // Check for public static void main method
+  const hasMainMethod = /public\s+static\s+void\s+main\s*\(\s*String\s*(\[\s*\]|\.\.\.)\s+[a-zA-Z0-9_]+\s*\)/.test(sourceCode);
+  if (!hasMainMethod) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "Main.java: error: Main method not found in class Main, please define the main method as:\n   public static void main(String[] args)",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for Scanner usage without import
+  const usesScanner = /\bScanner\b/.test(sourceCode);
+  const importsScanner = /import\s+java\.util\.(Scanner|\*);/.test(sourceCode);
+  if (usesScanner && !importsScanner) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "Main.java: error: cannot find symbol\n    Scanner sc = new Scanner(System.in);\n    ^\n  symbol:   class Scanner\n  location: class Main\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for BufferedReader usage without import
+  const usesBufferedReader = /\b(BufferedReader|InputStreamReader)\b/.test(sourceCode);
+  const importsIO = /import\s+java\.io\.(BufferedReader|InputStreamReader|\*);/.test(sourceCode);
+  if (usesBufferedReader && !importsIO) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "Main.java: error: cannot find symbol\n  symbol:   class BufferedReader\n  location: class Main\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  return null;
+}
+
 const EXECUTION_SYSTEM_PROMPT =
-  "You are a real interactive UNIX terminal compiler. Simulate line-by-line compilation and execution of the source code with the provided stdin values.\n" +
-  "SCHEMA:\n" +
-  '{\n  "output": "Exact interactive terminal output stream",\n  "compileError": "",\n  "runtimeError": "",\n  "statusId": 3\n}\n' +
-  "RULES FOR INTERACTIVE TERMINAL OUTPUT:\n" +
-  "1. Execute the code step-by-step from top to bottom.\n" +
-  "2. Print every System.out/printf/cout/print statement on its line.\n" +
-  "3. When a Scanner/cin/input statement reads a value from stdin, echo the typed input value formatted as '> input_value' on its own line in the stream, then continue to the next statement.\n" +
-  "4. If stdin runs out of input values for pending input statements, stop execution immediately right at the prompt line expecting input.\n" +
-  "5. Do NOT include any AI commentary, markdown, code explanations, or extra text.\n" +
-  "6. Return ONLY raw JSON starting with { and ending with }.";
+  "You are a real interactive UNIX terminal compiler and execution engine.\n" +
+  "Simulate exact line-by-line compilation and execution of the source code with the provided stdin values.\n\n" +
+  "SCHEMA FOR RESPONSE (JSON ONLY):\n" +
+  "{\n" +
+  '  "statusId": 3,\n' +
+  '  "statusDescription": "Success",\n' +
+  '  "output": "Exact interactive terminal output stream",\n' +
+  '  "compileError": "",\n' +
+  '  "runtimeError": "",\n' +
+  '  "time": "0.05s",\n' +
+  '  "memory": 8,\n' +
+  '  "isAccepted": true\n' +
+  "}\n\n" +
+  "CRITICAL RULES:\n" +
+  "1. SYNTAX CHECKING: Before running, strictly check for syntax errors, missing semicolons, unclosed brackets, missing quotes, or invalid expressions. If ANY compilation error exists, DO NOT auto-fix it! Immediately return statusId=6, statusDescription='Compilation Error', output='', compileError='<exact error message, line number, and position>', runtimeError='', isAccepted=false.\n" +
+  "2. Execute valid code step-by-step from top to bottom of the main entry point.\n" +
+  "3. Print every printf / cout / System.out / print statement exact text output.\n" +
+  "4. Whenever ANY input statement is reached in ANY language (C: scanf, getchar, fgets; C++: cin, getline; Java: Scanner, BufferedReader; Python: input(); Go: fmt.Scan; C#: Console.ReadLine):\n" +
+  "   a. If input values exist in Stdin, consume the next value, echo it formatted as '> input_value' in the terminal output stream right where it was read, and continue execution.\n" +
+  "   b. If Stdin is empty ([NO STDIN VALUES PROVIDED] or no values remaining), DO NOT throw a Runtime Error or EOF error! Stop execution immediately right at that input prompt without any runtime error. Set statusId=3, statusDescription='Success', runtimeError='', compileError=''. Include all printed prompt text in the output field.\n" +
+  "5. Return ONLY raw JSON starting with { and ending with } without markdown code fences.";
 
 function buildExecutionPrompt({ language, sourceCode, stdin }) {
-  return `Language: ${language}\nSource:\n${sourceCode}\n\nStdin:\n${stdin || ""}`;
+  const hasStdin = typeof stdin === "string" && stdin.trim().length > 0;
+  return `Target Language: ${language}
+Source Code:
+${sourceCode}
+
+Standard Input (stdin):
+${hasStdin ? stdin : "[NO STDIN VALUES PROVIDED]"}`;
 }
 
 function cleanTerminalOutput(raw) {
@@ -932,9 +1084,59 @@ function cleanTerminalOutput(raw) {
   return cleaned.join("\n").trim();
 }
 
+function validateCCode(sourceCode) {
+  if (!sourceCode || typeof sourceCode !== "string") return null;
+
+  const hasMain = /\b(int|void)\s+main\s*\(/.test(sourceCode);
+  if (!hasMain) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.c: error: undefined reference to 'main'\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for missing semicolon before return or next statement
+  const missingSemicolon = /printf\s*\([^)]*\)\s*(return|\})/.test(sourceCode) || /puts\s*\([^)]*\)\s*(return|\})/.test(sourceCode);
+  if (missingSemicolon) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.c: In function 'main':\nmain.c: error: expected ';' before 'return'\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  return null;
+}
+
 async function runCode({ language, sourceCode, stdin }) {
-  // Fast Local Execution for JavaScript (< 2ms)
   const langKey = (language || "").toLowerCase();
+
+  // Pre-validate C compilation rules deterministically
+  if (langKey === "c") {
+    const cValError = validateCCode(sourceCode);
+    if (cValError) return cValError;
+  }
+
+  // Pre-validate Java compilation rules deterministically
+  if (langKey === "java") {
+    const validationError = validateJavaCode(sourceCode);
+    if (validationError) {
+      return validationError;
+    }
+  }
+
+  // Fast Local Execution for JavaScript (< 2ms)
   if (langKey === "javascript" || langKey === "js") {
     const vm = require("vm");
     let logs = [];

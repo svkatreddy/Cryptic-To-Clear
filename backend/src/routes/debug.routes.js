@@ -17,6 +17,7 @@ const traceLimiter = rateLimit({
   },
 });
 
+router.post("/", traceLimiter, asyncHandler(trace));
 router.post("/trace", traceLimiter, asyncHandler(trace));
 
 module.exports = router;

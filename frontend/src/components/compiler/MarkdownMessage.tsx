@@ -70,14 +70,14 @@ export default function MarkdownMessage({ content }: { content: string }) {
           code(props) {
             const { className, children } = props;
             const match = /language-(\w+)/.exec(className || "");
-            const isBlock = Boolean(match);
             const text = String(children).replace(/\n$/, "");
+            const isBlock = Boolean(match) || text.includes("\n");
 
             if (!isBlock) {
               return <code className={className}>{children}</code>;
             }
 
-            return <CodeBlock language={match![1]} code={text} />;
+            return <CodeBlock language={match ? match[1] : ""} code={text} />;
           },
           pre(props) {
             // SyntaxHighlighter already renders its own <pre>; avoid double-wrapping.

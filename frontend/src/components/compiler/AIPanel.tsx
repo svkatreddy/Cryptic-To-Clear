@@ -216,13 +216,14 @@ export default function AIPanel({
             disabled={busy}
             placeholder="Ask CodeMentor AI…"
             aria-label="Ask CodeMentor AI"
-            className="flex-1 bg-transparent text-[13px] placeholder:text-[var(--ink-faint)] outline-none disabled:cursor-not-allowed"
+            className="flex-1 bg-transparent text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] outline-none disabled:cursor-not-allowed"
           />
           <button
+            type="button"
             onClick={onSend}
             disabled={busy || !inputValue.trim()}
             aria-label="Send message"
-            className="h-7 w-7 flex items-center justify-center rounded-md bg-gradient-to-br from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] text-[#0a0d13] disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+            className="h-7 w-7 flex items-center justify-center rounded-md bg-gradient-to-br from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] text-[#0a0d13] disabled:opacity-30 disabled:cursor-not-allowed transition-opacity cursor-pointer shrink-0"
           >
             <Send className="h-3.5 w-3.5" />
           </button>

@@ -1,15 +1,14 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const asyncHandler = require("../middleware/asyncHandler");
+const { validateExecuteRequest } = require("../middleware/validateRequest");
 const { execute } = require("../controllers/execute.controller");
 
 const router = express.Router();
 
-// Keep the execution engine from being hammered — generous enough for a
-// single user actively coding, strict enough to prevent abuse.
 const executeLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -18,6 +17,6 @@ const executeLimiter = rateLimit({
   },
 });
 
-router.post("/", executeLimiter, asyncHandler(execute));
+router.post("/", executeLimiter, validateExecuteRequest, asyncHandler(execute));
 
 module.exports = router;

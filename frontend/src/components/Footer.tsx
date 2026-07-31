@@ -47,8 +47,8 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mt-4 text-sm text-[var(--ink-dim)] max-w-xs leading-relaxed">
-              The online compiler that doesn&apos;t just show you an error —
-              it teaches you what it means.
+              Cryptic to Clear: A tiny compiler that explains its own errors.
+              It doesn&apos;t just show you an error — it teaches you how to fix it.
             </p>
             <div className="mt-5 flex items-center gap-3">
               {[Code2, Globe, Mail].map((Icon, i) => (

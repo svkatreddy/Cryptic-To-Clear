@@ -41,7 +41,7 @@ export default function Hero() {
             className="inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 mb-6 font-mono text-[12px] text-[var(--syn-string)]"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--syn-string)] animate-pulse" />
-            AI-powered error explanations, live
+            Cryptic to Clear
           </motion.div>
 
           <motion.h1
@@ -50,20 +50,16 @@ export default function Hero() {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] tracking-tight"
           >
-            Compile Smarter
-            <br />
-            with{" "}
-            <span className="text-gradient">Artificial Intelligence</span>
+            Cryptic to <span className="text-gradient">Clear</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.25 }}
-            className="mt-6 text-base sm:text-lg text-[var(--ink-dim)] max-w-xl mx-auto lg:mx-0"
+            className="mt-6 text-base sm:text-lg text-[var(--ink-dim)] max-w-xl mx-auto lg:mx-0 font-medium"
           >
-            Write code, run it instantly, and understand every compiler error
-            using AI.
+            A tiny compiler that explains its own errors. Write code, run it instantly, and turn mysterious build errors into clear guidance.
           </motion.p>
 
           <motion.div

@@ -1,6 +1,6 @@
-# codementor-ai-platform
+# Cryptic to Clear: A tiny compiler that explains its own errors
 
-This project uses the Groq AI engine to run, compile, analyze, and explain code from the frontend.
+CodeMentor AI is an intelligent compiler platform powered by AI that runs, compiles, analyzes, and explains code errors in plain English.
 
 ## Groq Setup
 

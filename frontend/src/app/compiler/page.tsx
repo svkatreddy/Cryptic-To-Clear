@@ -685,10 +685,11 @@ export default function CompilerPage() {
     setErrors("");
 
     // Execute with initial preset input (if any)
+    const initialStdin = input || "";
     const result = await executeCode({
       language,
       sourceCode: code,
-      stdin: "",
+      stdin: initialStdin,
     });
 
     if (!result.success) {
@@ -724,13 +725,14 @@ export default function CompilerPage() {
       setStatus("success");
     }
     setIsRunning(false);
-  }, [currentLang, language, code, triggerAIExplain]);
+  }, [currentLang, language, code, input, triggerAIExplain]);
 
   const handleSubmitTerminalInput = useCallback(
     async (inputValueLine: string) => {
       // Accumulate input ONLY for the current active execution session
-      const nextSessionInput = sessionInput.trim()
-        ? `${sessionInput.trim()}\n${inputValueLine}`
+      const baseInput = sessionInput || input || "";
+      const nextSessionInput = baseInput.trim()
+        ? `${baseInput.trim()}\n${inputValueLine}`
         : inputValueLine;
 
       setSessionInput(nextSessionInput);
@@ -784,7 +786,7 @@ export default function CompilerPage() {
       }
       setIsRunning(false);
     },
-    [currentLang, language, code, sessionInput]
+    [currentLang, language, code, sessionInput, input]
   );
 
   const handleCompile = useCallback(async () => {

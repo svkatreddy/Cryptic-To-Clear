@@ -58,6 +58,24 @@ const env = {
     baseUrl: process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/openai",
     requestTimeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) || 12000,
   },
+  judge0: {
+    baseUrl: process.env.JUDGE0_BASE_URL || "https://judge0-ce.p.rapidapi.com",
+    apiKey: process.env.JUDGE0_API_KEY || "",
+    apiHost: process.env.JUDGE0_API_HOST || "judge0-ce.p.rapidapi.com",
+  },
+  piston: {
+    baseUrl: process.env.PISTON_BASE_URL || "https://emkc.org/api/v2/piston",
+  },
+  compiler: {
+    javaPath: process.env.JAVA_PATH || "java",
+    javacPath: process.env.JAVAC_PATH || "javac",
+    pythonPath: process.env.PYTHON_PATH || "python",
+    gccPath: process.env.GCC_PATH || "gcc",
+    gppPath: process.env.GPP_PATH || "g++",
+    goPath: process.env.GO_PATH || "go",
+    executionTimeoutMs: Number(process.env.EXECUTION_TIMEOUT_MS) || 5000,
+    maxBufferBytes: Number(process.env.MAX_BUFFER_BYTES) || 1024 * 1024,
+  },
 };
 
 module.exports = env;

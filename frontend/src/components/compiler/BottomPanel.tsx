@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { GripHorizontal, CornerDownLeft } from "lucide-react";
 
+export type BottomTab = "output" | "errors";
+
 interface BottomPanelProps {
   output: string;
   errors: string;

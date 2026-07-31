@@ -22,9 +22,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CodeMentor AI — Compile Smarter with Artificial Intelligence",
+  title: "Cryptic to Clear — A Tiny Compiler That Explains Its Own Errors",
   description:
-    "Write code, run instantly, and understand every compiler error using AI. CodeMentor AI is the online compiler that explains itself.",
+    "Cryptic to Clear: A tiny compiler that explains its own errors. Write code, run instantly, and understand every compiler error using AI.",
 };
 
 export default function RootLayout({
