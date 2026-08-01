@@ -29,7 +29,7 @@ export default function GlobalError({
       >
         <div style={{ textAlign: "center", maxWidth: 420 }}>
           <h1 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
-            CodeMentor AI hit a critical error
+            Cryptic to Clear hit a critical error
           </h1>
           <p style={{ fontSize: 13, color: "#8993a4", marginBottom: 20, lineHeight: 1.6 }}>
             Please reload the page. If this keeps happening, your code is

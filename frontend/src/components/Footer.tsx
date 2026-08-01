@@ -88,7 +88,7 @@ export default function Footer() {
 
         <div className="mt-14 pt-6 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-[var(--ink-faint)] font-mono">
-            © {new Date().getFullYear()} CodeMentor AI. All rights reserved.
+            © {new Date().getFullYear()} Cryptic to Clear. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-xs text-[var(--ink-faint)] font-mono">
             <Link href="/#privacy" className="hover:text-[var(--ink-dim)] transition-colors">

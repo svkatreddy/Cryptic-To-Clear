@@ -61,9 +61,9 @@ public class Main {
         System.out.println("Echo: " + text);
     }
 }`,
-    stdin: "CodeMentor AI",
+    stdin: "Cryptic to Clear",
   });
-  assert(t3.statusId === 3 && t3.output.includes("Echo: CodeMentor AI"), "BufferedReader Input", JSON.stringify(t3));
+  assert(t3.statusId === 3 && t3.output.includes("Echo: Cryptic to Clear"), "BufferedReader Input", JSON.stringify(t3));
 
   // 4. Multiple Classes in Single Snippet
   console.log("\n--- Test 4: Multiple Classes ---");
@@ -143,12 +143,12 @@ public class Main {
     sourceCode: `
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello 🚀 CodeMentor AI ✨ 🤖");
+        System.out.println("Hello 🚀 Cryptic to Clear ✨ 🤖");
     }
 }`,
     stdin: "",
   });
-  assert(t9.statusId === 3 && t9.output.includes("🚀 CodeMentor AI ✨"), "Unicode UTF-8 Support", JSON.stringify(t9));
+  assert(t9.statusId === 3 && t9.output.includes("🚀 Cryptic to Clear ✨"), "Unicode UTF-8 Support", JSON.stringify(t9));
 
   console.log("\n==================================================");
   console.log(`SUMMARY: ${passed} PASSED, ${failed} FAILED out of ${passed + failed} TESTS`);

@@ -1,6 +1,6 @@
-# CodeMentor AI — Frontend
+# Cryptic to Clear — Frontend
 
-This is the Next.js frontend for CodeMentor AI. See the
+This is the Next.js frontend for Cryptic to Clear. See the
 [project root README](../README.md) for the full setup guide (both
 frontend and backend), the feature list, environment variables, and the
 API reference.

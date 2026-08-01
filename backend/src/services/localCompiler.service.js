@@ -43,13 +43,21 @@ function normalizeJavaSource(sourceCode) {
  */
 function checkBinaryExists(command) {
   return new Promise((resolve) => {
-    const isWin = process.platform === "win32";
-    const checkCmd = isWin ? "where.exe" : "which";
-    execFile(checkCmd, [command], { timeout: 3000 }, (error, stdout) => {
-      if (!error && stdout && stdout.trim().length > 0) {
+    // Execute binary directly with --version to verify it's a real installed compiler/interpreter
+    execFile(command, ["--version"], { timeout: 3000 }, (error, stdout, stderr) => {
+      const combined = ((stdout || "") + (stderr || "")).toLowerCase();
+      if (!error && combined.length > 0 && !combined.includes("was not found") && !combined.includes("microsoft store")) {
         return resolve(true);
       }
-      resolve(false);
+
+      // Try -version for tools like java/javac that use single-dash flag
+      execFile(command, ["-version"], { timeout: 3000 }, (err2, stdout2, stderr2) => {
+        const combined2 = ((stdout2 || "") + (stderr2 || "")).toLowerCase();
+        if (!err2 && combined2.length > 0 && !combined2.includes("was not found") && !combined2.includes("microsoft store")) {
+          return resolve(true);
+        }
+        resolve(false);
+      });
     });
   });
 }

@@ -1,5 +1,5 @@
 /**
- * Centralized Structured Logger for CodeMentor AI Platform
+ * Centralized Structured Logger for Cryptic to Clear Platform
  */
 
 const LOG_LEVELS = {

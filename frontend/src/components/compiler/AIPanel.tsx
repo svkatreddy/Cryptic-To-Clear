@@ -163,7 +163,7 @@ export default function AIPanel({
               <Bot className="h-3.5 w-3.5 text-[var(--syn-keyword)]" />
             </span>
             <div className="glass rounded-lg rounded-tl-sm px-3.5 py-2.5 text-[13px] text-[var(--ink-dim)] leading-relaxed">
-              Hi, I&apos;m CodeMentor AI. Ask me anything about your code, try a
+              Hi, I&apos;m Cryptic to Clear. Ask me anything about your code, try a
               quick action below, or just keep coding — I&apos;ll jump in
               automatically if your build fails.
             </div>
@@ -214,8 +214,8 @@ export default function AIPanel({
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={busy}
-            placeholder="Ask CodeMentor AI…"
-            aria-label="Ask CodeMentor AI"
+            placeholder="Ask Cryptic to Clear…"
+            aria-label="Ask Cryptic to Clear"
             className="flex-1 bg-transparent text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] outline-none disabled:cursor-not-allowed"
           />
           <button

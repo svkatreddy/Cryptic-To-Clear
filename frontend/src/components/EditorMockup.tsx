@@ -19,7 +19,7 @@ export default function EditorMockup() {
           <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
           <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
           <span className="ml-3 font-mono text-[12px] text-[var(--ink-dim)]">
-            main.py — CodeMentor AI
+            main.py — Cryptic to Clear
           </span>
         </div>
 

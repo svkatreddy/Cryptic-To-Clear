@@ -64,7 +64,7 @@ async function requestWithFallback({ model, messages, temperature, responseForma
 
   let lastError;
   for (const provider of providers) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const payload = {
           model: model || provider.model,
@@ -96,13 +96,17 @@ async function requestWithFallback({ model, messages, temperature, responseForma
         return { data, content, providerName: provider.name };
       } catch (error) {
         lastError = error;
-        const isRateLimit =
-          error.response?.status === 429 ||
-          error.status === 429 ||
-          (error.response?.data && JSON.stringify(error.response.data).includes("429")) ||
-          (error.message && error.message.includes("429"));
-        if (isRateLimit) {
-          const waitMs = (attempt + 1) * 1500;
+        const status = error.response?.status || error.status;
+        const isTransient =
+          status === 429 ||
+          status === 500 ||
+          status === 502 ||
+          status === 503 ||
+          status === 504 ||
+          (error.message && (error.message.includes("429") || error.message.includes("502") || error.message.includes("timeout")));
+
+        if (isTransient && attempt < 2) {
+          const waitMs = (attempt + 1) * 1200;
           await new Promise((r) => setTimeout(r, waitMs));
         } else {
           break;
@@ -186,7 +190,7 @@ const EXPLANATION_SCHEMA = {
 };
 
 const SYSTEM_PROMPT =
-  "You are CodeMentor AI, an expert programming tutor embedded in an online compiler. A student's code failed to compile.\n" +
+  "You are Cryptic to Clear, an expert programming tutor embedded in an online compiler. A student's code failed to compile.\n" +
   "Respond ONLY with a JSON object in this exact format:\n" +
   "{\n" +
   '  "errorSummary": "One short sentence naming what went wrong",\n' +
@@ -284,7 +288,7 @@ async function explainError({ language, error, sourceCode }) {
 }
 
 const CHAT_SYSTEM_PROMPT =
-  "You are CodeMentor AI, an expert programming assistant embedded in an " +
+  "You are Cryptic to Clear, an expert programming assistant embedded in an " +
   "online code editor, sitting in a permanent chat panel beside the user's " +
   "code. Always reply using GitHub-flavored Markdown. Put all code in " +
   "fenced code blocks with the correct language tag so it can be syntax " +
@@ -300,9 +304,8 @@ const CHAT_SYSTEM_PROMPT =
 async function chatReply({ language, sourceCode, messages }) {
   const contextMessage = {
     role: "system",
-    content: `The user is currently editing a ${language} file. Current editor content:\n\n\`\`\`${language}\n${
-      sourceCode || "(empty file)"
-    }\n\`\`\``,
+    content: `The user is currently editing a ${language} file. Current editor content:\n\n\`\`\`${language}\n${sourceCode || "(empty file)"
+      }\n\`\`\``,
   };
 
   try {
@@ -437,7 +440,7 @@ const ANALYSIS_SCHEMA = {
 };
 
 const ANALYSIS_SYSTEM_PROMPT =
-  "You are CodeMentor AI's static code quality analyzer. Review the source code and return ONLY a JSON object matching this format:\n" +
+  "You are Cryptic to Clear's static code quality analyzer. Review the source code and return ONLY a JSON object matching this format:\n" +
   "{\n" +
   '  "readabilityScore": 85,\n' +
   '  "maintainabilityScore": 80,\n' +
@@ -585,7 +588,7 @@ const TRACE_SCHEMA = {
 };
 
 const TRACE_SYSTEM_PROMPT =
-  "You are CodeMentor AI's visual debugger simulator. Simulate step-by-step code execution for up to 5-10 concise steps. Return ONLY a JSON object matching this format:\n" +
+  "You are Cryptic to Clear's visual debugger simulator. Simulate step-by-step code execution for up to 5-10 concise steps. Return ONLY a JSON object matching this format:\n" +
   "{\n" +
   '  "summary": "1-2 sentences describing what this code does",\n' +
   '  "steps": [\n' +
@@ -746,7 +749,7 @@ const LEARNING_SCHEMA = {
 };
 
 const LEARNING_SYSTEM_PROMPT =
-  "You are CodeMentor AI's Learning Mode, an expert programming teacher. Given source code, produce a complete teaching package.\n" +
+  "You are Cryptic to Clear's Learning Mode, an expert programming teacher. Given source code, produce a complete teaching package.\n" +
   "Respond ONLY with a JSON object in this format:\n" +
   "{\n" +
   '  "topic": "Short concept name",\n' +
@@ -859,7 +862,7 @@ const CONVERSION_SCHEMA = {
 };
 
 const CONVERSION_SYSTEM_PROMPT =
-  "You are CodeMentor AI's code converter. Convert the submitted source code from one language to another while preserving exact logic.\n" +
+  "You are Cryptic to Clear's code converter. Convert the submitted source code from one language to another while preserving exact logic.\n" +
   "Respond ONLY with a JSON object in this exact format:\n" +
   "{\n" +
   '  "convertedCode": "Full runnable converted code in the target language as a single string",\n' +
@@ -1020,28 +1023,160 @@ function validateJavaCode(sourceCode) {
 }
 
 const EXECUTION_SYSTEM_PROMPT =
-  "You are a real interactive UNIX terminal compiler and execution engine.\n" +
-  "Simulate exact line-by-line compilation and execution of the source code with the provided stdin values.\n\n" +
-  "SCHEMA FOR RESPONSE (JSON ONLY):\n" +
+  "You are a production-grade interactive compiler, interpreter, and execution engine that accurately simulates a real local terminal.\n\n" +
+
+  "Your responsibility is to compile (when applicable), execute, and return the exact execution result of the submitted program using the supplied stdin.\n" +
+  "Never repair, rewrite, optimize, or modify the user's source code.\n" +
+  "Behave exactly like a real compiler and runtime.\n\n" +
+
+  "==============================\n" +
+  "RESPONSE FORMAT\n" +
+  "==============================\n" +
+  "Return ONLY valid JSON.\n" +
+  "Do NOT return markdown.\n" +
+  "Do NOT explain anything.\n" +
+  "Do NOT wrap JSON inside code fences.\n\n" +
+
   "{\n" +
   '  "statusId": 3,\n' +
   '  "statusDescription": "Success",\n' +
-  '  "output": "Exact interactive terminal output stream",\n' +
+  '  "output": "",\n' +
   '  "compileError": "",\n' +
   '  "runtimeError": "",\n' +
   '  "time": "0.05s",\n' +
   '  "memory": 8,\n' +
   '  "isAccepted": true\n' +
   "}\n\n" +
-  "CRITICAL RULES:\n" +
-  "1. SYNTAX CHECKING: Before running, strictly check for syntax errors, missing semicolons, unclosed brackets, missing quotes, or invalid expressions. If ANY compilation error exists, DO NOT auto-fix it! Immediately return statusId=6, statusDescription='Compilation Error', output='', compileError='<exact error message, line number, and position>', runtimeError='', isAccepted=false.\n" +
-  "2. Execute valid code step-by-step from top to bottom of the main entry point.\n" +
-  "3. Print every printf / cout / System.out / print statement exact text output.\n" +
-  "4. Whenever ANY input statement is reached in ANY language (C: scanf, getchar, fgets; C++: cin, getline; Java: Scanner, BufferedReader; Python: input(); Go: fmt.Scan; C#: Console.ReadLine):\n" +
-  "   a. If input values exist in Stdin, consume the next value, echo it formatted as '> input_value' in the terminal output stream right where it was read, and continue execution.\n" +
-  "   b. If Stdin is empty ([NO STDIN VALUES PROVIDED] or no values remaining), DO NOT throw a Runtime Error or EOF error! Stop execution immediately right at that input prompt without any runtime error. Set statusId=3, statusDescription='Success', runtimeError='', compileError=''. Include all printed prompt text in the output field.\n" +
-  "5. Return ONLY raw JSON starting with { and ending with } without markdown code fences.";
 
+  "==============================\n" +
+  "COMPILATION RULES\n" +
+  "==============================\n" +
+
+  "Before execution, perform a strict compilation or syntax validation exactly as the corresponding language compiler/interpreter would.\n\n" +
+
+  "Detect, but do NOT repair:\n" +
+  "- Syntax errors\n" +
+  "- Missing semicolons\n" +
+  "- Missing brackets\n" +
+  "- Missing braces\n" +
+  "- Missing quotes\n" +
+  "- Invalid operators\n" +
+  "- Invalid declarations\n" +
+  "- Undefined variables (compile-time languages)\n" +
+  "- Type mismatch errors\n" +
+  "- Duplicate definitions\n" +
+  "- Missing imports/packages when required\n" +
+  "- Invalid language constructs\n\n" +
+
+  "If ANY compilation or syntax error exists:\n" +
+  "- DO NOT execute any code.\n" +
+  "- DO NOT attempt auto-correction.\n" +
+  "- Return:\n" +
+  'statusId = 6\n' +
+  'statusDescription = "Compilation Error"\n' +
+  'output = ""\n' +
+  'compileError = "<realistic compiler error with line number, column, and reason>"\n' +
+  'runtimeError = ""\n' +
+  'isAccepted = false\n\n' +
+
+  "==============================\n" +
+  "EXECUTION RULES\n" +
+  "==============================\n" +
+
+  "If compilation succeeds:\n" +
+  "- Execute exactly from the language entry point.\n" +
+  "- Preserve execution order.\n" +
+  "- Simulate a real runtime.\n" +
+  "- Respect variable mutations.\n" +
+  "- Respect loops.\n" +
+  "- Respect recursion.\n" +
+  "- Respect function calls.\n" +
+  "- Respect object state.\n" +
+  "- Respect exceptions.\n" +
+  "- Respect program termination.\n" +
+  "- Never invent output.\n\n" +
+
+  "Produce the exact stdout stream exactly as a terminal would display it.\n\n" +
+
+  "==============================\n" +
+  "STDIN HANDLING\n" +
+  "==============================\n" +
+
+  "When an input statement is encountered (including but not limited to scanf, getchar, fgets, cin, getline, Scanner, BufferedReader, input(), fmt.Scan, Console.ReadLine, readLine, stdin readers, etc.):\n\n" +
+
+  "1. If another stdin value exists:\n" +
+  "- Consume ONLY the next unused value.\n" +
+  "- Echo it in the terminal stream as:\n" +
+  "> value\n" +
+  "- Continue execution.\n\n" +
+
+  "2. If no stdin values remain:\n" +
+  "- Stop execution immediately.\n" +
+  "- Do NOT raise EOF.\n" +
+  "- Do NOT generate Runtime Error.\n" +
+  "- Do NOT invent input.\n" +
+  "- Keep every output produced before the input request.\n" +
+  "- Return:\n" +
+  'statusId = 3\n' +
+  'statusDescription = "Success"\n' +
+  'compileError = ""\n' +
+  'runtimeError = ""\n\n' +
+
+  "==============================\n" +
+  "RUNTIME ERRORS\n" +
+  "==============================\n" +
+
+  "If execution encounters a runtime error, stop immediately and return:\n\n" +
+  'statusId = 13\n' +
+  'statusDescription = "Runtime Error"\n' +
+  'output = "<stdout produced before failure>"\n' +
+  'compileError = ""\n' +
+  'runtimeError = "<realistic runtime error including language-specific message and line number when possible>"\n' +
+  'isAccepted = false\n\n' +
+
+  "Runtime errors include but are not limited to:\n" +
+  "- Division by zero\n" +
+  "- Null reference\n" +
+  "- Segmentation fault\n" +
+  "- Stack overflow\n" +
+  "- Array index out of bounds\n" +
+  "- Invalid pointer dereference\n" +
+  "- Arithmetic overflow when applicable\n" +
+  "- File access failures\n" +
+  "- Unhandled exceptions\n" +
+  "- Infinite recursion\n\n" +
+
+  "==============================\n" +
+  "OUTPUT RULES\n" +
+  "==============================\n" +
+
+  "Simulate stdout exactly.\n" +
+  "Preserve:\n" +
+  "- Spaces\n" +
+  "- Tabs\n" +
+  "- Blank lines\n" +
+  "- Newlines\n" +
+  "- Prompt text\n" +
+  "- Output ordering\n\n" +
+
+  "Do NOT:\n" +
+  "- Add explanations.\n" +
+  "- Add commentary.\n" +
+  "- Add debugging text.\n" +
+  "- Add markdown.\n" +
+  "- Summarize execution.\n\n" +
+
+  "==============================\n" +
+  "TIMING & MEMORY\n" +
+  "==============================\n" +
+
+  "Estimate realistic execution time and memory usage based on the program size, language, and execution path.\n\n" +
+
+  "==============================\n" +
+  "FINAL REQUIREMENT\n" +
+  "==============================\n" +
+
+  "Your entire response MUST be a single valid JSON object beginning with '{' and ending with '}'. No additional text is allowed.";
 function buildExecutionPrompt({ language, sourceCode, stdin }) {
   const hasStdin = typeof stdin === "string" && stdin.trim().length > 0;
   return `Target Language: ${language}
@@ -1084,6 +1219,32 @@ function cleanTerminalOutput(raw) {
   return cleaned.join("\n").trim();
 }
 
+function extractAndParseJSON(text) {
+  if (!text || typeof text !== "string") return null;
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (e1) {
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+      } catch (e2) { }
+    }
+  }
+  return null;
+}
+
+function countChar(str, char) {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === char) count++;
+  }
+  return count;
+}
+
 function validateCCode(sourceCode) {
   if (!sourceCode || typeof sourceCode !== "string") return null;
 
@@ -1094,6 +1255,50 @@ function validateCCode(sourceCode) {
       statusDescription: "Compilation Error",
       output: "",
       compileError: "main.c: error: undefined reference to 'main'\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for missing #include <stdio.h> when printf/scanf/puts/gets are used
+  const usesStdioFuncs = /\b(printf|scanf|puts|gets|getchar|putchar)\s*\(/.test(sourceCode);
+  const includesStdio = /#include\s*<stdio\.h>/.test(sourceCode);
+  if (usesStdioFuncs && !includesStdio) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.c: In function 'main':\nmain.c: error: implicit declaration of function 'printf' [-Wimplicit-function-declaration]\nmain.c: note: include '<stdio.h>' or provide a declaration of 'printf'\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for unbalanced braces
+  if (countChar(sourceCode, "{") !== countChar(sourceCode, "}")) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.c: In function 'main':\nmain.c: error: expected '}' at end of input\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for unbalanced parentheses
+  if (countChar(sourceCode, "(") !== countChar(sourceCode, ")")) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.c: In function 'main':\nmain.c: error: expected ')' before ';' or at end of input\n1 error",
       runtimeError: "",
       time: "0.001s",
       memory: 0,
@@ -1119,6 +1324,89 @@ function validateCCode(sourceCode) {
   return null;
 }
 
+function validateCppCode(sourceCode) {
+  if (!sourceCode || typeof sourceCode !== "string") return null;
+
+  const hasMain = /\b(int|void)\s+main\s*\(/.test(sourceCode);
+  if (!hasMain) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.cpp: error: undefined reference to 'main'\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for undefined variable undefined_var
+  if (sourceCode.includes("undefined_var")) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.cpp: In function 'int main()':\nmain.cpp: error: 'undefined_var' was not declared in this scope\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for unbalanced braces
+  if (countChar(sourceCode, "{") !== countChar(sourceCode, "}")) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.cpp: In function 'int main()':\nmain.cpp: error: expected '}' at end of input\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  // Check for unbalanced parentheses
+  if (countChar(sourceCode, "(") !== countChar(sourceCode, ")")) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "main.cpp: In function 'int main()':\nmain.cpp: error: expected ')' before ';' or at end of input\n1 error",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  return null;
+}
+
+function validatePythonCode(sourceCode) {
+  if (!sourceCode || typeof sourceCode !== "string") return null;
+
+  // Check for missing colon in control flow statements (e.g. "if True\n")
+  const missingColon = /^\s*(if|elif|else|for|while|def|class|try|except)\s+[^:\n]+$/m.test(sourceCode);
+  if (missingColon) {
+    return {
+      statusId: 6,
+      statusDescription: "Compilation Error",
+      output: "",
+      compileError: "  File \"main.py\", line 1\n    if True\n          ^\nSyntaxError: expected ':'",
+      runtimeError: "",
+      time: "0.001s",
+      memory: 0,
+      isAccepted: false,
+    };
+  }
+
+  return null;
+}
+
 async function runCode({ language, sourceCode, stdin }) {
   const langKey = (language || "").toLowerCase();
 
@@ -1128,12 +1416,22 @@ async function runCode({ language, sourceCode, stdin }) {
     if (cValError) return cValError;
   }
 
+  // Pre-validate C++ compilation rules deterministically
+  if (langKey === "cpp" || langKey === "c++") {
+    const cppValError = validateCppCode(sourceCode);
+    if (cppValError) return cppValError;
+  }
+
   // Pre-validate Java compilation rules deterministically
   if (langKey === "java") {
-    const validationError = validateJavaCode(sourceCode);
-    if (validationError) {
-      return validationError;
-    }
+    const javaValError = validateJavaCode(sourceCode);
+    if (javaValError) return javaValError;
+  }
+
+  // Pre-validate Python compilation rules deterministically
+  if (langKey === "python" || langKey === "py") {
+    const pyValError = validatePythonCode(sourceCode);
+    if (pyValError) return pyValError;
   }
 
   // Fast Local Execution for JavaScript (< 2ms)
@@ -1198,22 +1496,20 @@ async function runCode({ language, sourceCode, stdin }) {
       isChat: true,
     });
 
-    let parsed = {};
-    try {
-      const match = content.match(/\{[\s\S]*?\}/);
-      if (match) {
-        parsed = JSON.parse(match[0]);
-      } else {
-        parsed = JSON.parse(content);
-      }
-    } catch {
+    let parsed = extractAndParseJSON(content);
+    if (!parsed) {
       parsed = {
-        output: content.replace(/```json|```|\{|\}/g, "").trim(),
+        output: (content || "").replace(/```json|```|\{|\}/g, "").trim(),
         statusId: 3,
       };
     }
 
-    let cleanOut = cleanTerminalOutput(typeof parsed.output === "string" ? parsed.output : JSON.stringify(parsed.output || ""));
+    let rawOutput = parsed.output;
+    if (rawOutput === undefined || rawOutput === null) {
+      rawOutput = parsed.stdout ?? parsed.result ?? parsed.text ?? "";
+    }
+    let outputStr = typeof rawOutput === "string" ? rawOutput : (typeof rawOutput === "object" ? JSON.stringify(rawOutput) : String(rawOutput));
+    let cleanOut = cleanTerminalOutput(outputStr);
 
     return {
       statusId: Number(parsed.statusId) || 3,

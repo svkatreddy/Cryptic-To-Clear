@@ -1,6 +1,6 @@
 # Cryptic to Clear: A tiny compiler that explains its own errors
 
-CodeMentor AI is an intelligent compiler platform powered by AI that runs, compiles, analyzes, and explains code errors in plain English.
+Cryptic to Clear is an intelligent compiler platform powered by AI that runs, compiles, analyzes, and explains code errors in plain English.
 
 ## Groq Setup
 

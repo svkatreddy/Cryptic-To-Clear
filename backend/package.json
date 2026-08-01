@@ -1,7 +1,7 @@
 {
   "name": "codementor-ai-backend",
   "version": "1.0.0",
-  "description": "Express API that connects CodeMentor AI to the Groq AI execution engine",
+  "description": "Express API that connects Cryptic to Clear to the Groq AI execution engine",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

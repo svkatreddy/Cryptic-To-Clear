@@ -39,7 +39,7 @@ app.use("/api", apiRoutes);
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    name: "CodeMentor AI API",
+    name: "Cryptic to Clear API",
     status: "healthy",
     version: "1.0.0",
   });
@@ -54,7 +54,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const server = app.listen(env.port, () => {
-  logger.info(`CodeMentor AI backend listening on port ${env.port}`);
+  logger.info(`Cryptic to Clear backend listening on port ${env.port}`);
 });
 
 // Graceful shutdown handling

@@ -26,7 +26,7 @@ export const LANGUAGES: LanguageConfig[] = [
     template: `#include <stdio.h>
 
 int main(void) {
-    printf("Hello, CodeMentor AI!\\n");
+    printf("Hello, Cryptic to Clear!\\n");
     return 0;
 }
 `,
@@ -41,7 +41,7 @@ int main(void) {
     template: `#include <iostream>
 
 int main() {
-    std::cout << "Hello, CodeMentor AI!" << std::endl;
+    std::cout << "Hello, Cryptic to Clear!" << std::endl;
     return 0;
 }
 `,
@@ -55,7 +55,7 @@ int main() {
     accent: "var(--syn-const)",
     template: `public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello, CodeMentor AI!");
+        System.out.println("Hello, Cryptic to Clear!");
     }
 }
 `,
@@ -68,7 +68,7 @@ int main() {
     extension: "py",
     accent: "var(--syn-string)",
     template: `def main():
-    print("Hello, CodeMentor AI!")
+    print("Hello, Cryptic to Clear!")
 
 
 if __name__ == "__main__":
