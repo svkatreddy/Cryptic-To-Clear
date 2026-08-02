@@ -20,7 +20,7 @@ const FEATURES = [
     icon: Bug,
     accent: "var(--syn-function)",
     title: "Debug in context",
-    desc: "CodeMentor points at the line, the variable, and the fix — not just the error message.",
+    desc: "Cryptic to Clear points at the line, the variable, and the fix — not just the error message.",
   },
 ];
 

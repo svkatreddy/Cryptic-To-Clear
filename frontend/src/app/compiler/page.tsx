@@ -671,7 +671,7 @@ export default function CompilerPage() {
       setBottomTab("errors");
       setStatus("error");
       setErrors(
-        `${currentLang.label} execution isn't connected to the backend yet.\nSupported right now: C, C++, Java, Python, JavaScript, Go, Rust, PHP, Kotlin, C#.`
+        `${currentLang.label} execution isn't connected to the backend yet.\nSupported right now: C, C++, Java, Python.`
       );
       return;
     }
@@ -691,6 +691,7 @@ export default function CompilerPage() {
       sourceCode: code,
       stdin: initialStdin,
     });
+    console.log("[EXECUTE RESULT]:", result);
 
     if (!result.success) {
       setStatus("error");
@@ -794,7 +795,7 @@ export default function CompilerPage() {
       setBottomTab("errors");
       setStatus("error");
       setErrors(
-        `${currentLang.label} isn't connected to the backend yet.\nSupported right now: C, C++, Java, Python, JavaScript, Go, Rust, PHP, Kotlin, C#.`
+        `${currentLang.label} isn't connected to the backend yet.\nSupported right now: C, C++, Java, Python.`
       );
       return;
     }
@@ -809,6 +810,7 @@ export default function CompilerPage() {
       sourceCode: code,
       stdin: input,
     });
+    console.log("[EXECUTE RESULT]:", result);
 
     if (!result.success) {
       setStatus("error");

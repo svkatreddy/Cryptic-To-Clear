@@ -1,13 +1,321 @@
-import PageShell from "@/components/PageShell";
+"use client";
 
-export const metadata = { title: "Features — Cryptic to Clear" };
+import { useState } from "react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import Link from "next/link";
+import {
+  Zap,
+  Bot,
+  Gauge,
+  Bug,
+  BookOpen,
+  ArrowRightLeft,
+  CheckCircle2,
+  Code2,
+  Cpu,
+  Sparkles,
+  ShieldCheck,
+} from "lucide-react";
 
 export default function FeaturesPage() {
+  const [activeTab, setActiveTab] = useState(0);
+
+  const features = [
+    {
+      id: "execution",
+      icon: Cpu,
+      title: "Multi-Tier Execution Engine",
+      subtitle: "Instant fallback execution system",
+      description:
+        "Executes C, C++, Java, and Python code via native local compilers (GCC, G++, JDK, Python), remote APIs (Judge0/Piston), or our instant AI execution fallback.",
+      highlights: [
+        "Sub-millisecond local execution when binaries are available",
+        "Piped stdin/stdout support for interactive program inputs",
+        "Timeouts & memory bounds preventing infinite loops",
+        "Clean workspace auto-cleanup post execution",
+      ],
+      codeSnippet: `// Local Compiler & AI Fallback Tier
+1. Native GCC/G++/JDK Compilation
+2. Piston & Judge0 Remote API Fallbacks
+3. Groq AI Simulation Engine`,
+    },
+    {
+      id: "ai-tutor",
+      icon: Bot,
+      title: "AI Compiler Error Tutor",
+      subtitle: "Never get stuck on cryptic error messages",
+      description:
+        "Automatically analyzes compiler errors and pinpoints exact lines, offering beginner-friendly explanations, step-by-step fix guides, and side-by-side code diffs.",
+      highlights: [
+        "Structured error output schemas for zero prompt hallucination",
+        "One-click 'Apply AI Fix' with instant editor code updates",
+        "Undo & Compare Changes with visual diff modal",
+        "Best practices & common mistake summaries",
+      ],
+      codeSnippet: `// Example AI Error Analysis
+Line 14: missing ';' before 'return'
+Summary: Syntax Error in main loop
+Fix: Add a semicolon at the end of line 14`,
+    },
+    {
+      id: "analyzer",
+      icon: Gauge,
+      title: "Code Quality & Security Analyzer",
+      subtitle: "Real-time automated code reviews",
+      description:
+        "Evaluates readability and maintainability scores while identifying performance bottlenecks, security risks, dead code, and variable naming suggestions.",
+      highlights: [
+        "0-100 Readability and Maintainability Scoring",
+        "OWASP & memory security risk identification",
+        "Dead code and duplicate logic detection",
+        "Variable & function naming recommendations",
+      ],
+      codeSnippet: `Readability Score: 92/100
+Maintainability: 88/100
+Security Check: 0 Vulnerabilities Found
+Tip: Rename 'x' to 'userCount' for clarity`,
+    },
+    {
+      id: "debugger",
+      icon: Bug,
+      title: "Visual Execution Debugger",
+      subtitle: "Step-by-step memory and stack visualization",
+      description:
+        "Simulates step-by-step execution to trace variables, call stack state, memory allocation (Stack/Heap), and line-by-line output progression.",
+      highlights: [
+        "Step-into, step-over, and reset controls",
+        "Real-time Call Stack & Scope inspector",
+        "Visual Stack vs Heap memory frame allocation",
+        "Interactive step timeline scrubber",
+      ],
+      codeSnippet: `Step 3 [Line 12]: i = 2
+Call Stack: main() -> computeSum()
+Variables: { sum: 15, count: 2 }
+Memory: [Stack] sum (int) = 15`,
+    },
+    {
+      id: "learning",
+      icon: BookOpen,
+      title: "Multi-Level Learning Mode",
+      subtitle: "Master algorithms from beginner to interview ready",
+      description:
+        "Breaks down complex code into Beginner, Intermediate, and Advanced explanations, complete with Mermaid diagrams, pseudocode, and practice questions.",
+      highlights: [
+        "3-tier explanations tailored to your experience level",
+        "Auto-generated Mermaid logic flowcharts",
+        "Time & Space complexity analysis (Big-O)",
+        "Technical interview practice questions & hints",
+      ],
+      codeSnippet: `Concept: Binary Search Tree Insertion
+Time Complexity: O(log N) average, O(N) worst
+Space Complexity: O(H) stack depth`,
+    },
+    {
+      id: "converter",
+      icon: ArrowRightLeft,
+      title: "Polyglot Code Converter",
+      subtitle: "Translate logic seamlessly between languages",
+      description:
+        "Converts source code between C, C++, Java, and Python while preserving logic, idiomatic language structures, and explaining key language differences.",
+      highlights: [
+        "Accurate syntax and paradigm conversion",
+        "Idiomatic pattern translation (e.g. C++ vector to Python list)",
+        "Detailed comparison notes highlighting language nuances",
+        "Direct one-click loading into the main editor",
+      ],
+      codeSnippet: `// C++ -> Python Conversion
+std::vector<int> nums = {1, 2, 3};
+   ↓
+nums = [1, 2, 3]`,
+    },
+  ];
+
   return (
-    <PageShell
-      eyebrow="capabilities"
-      title="Everything Cryptic to Clear can do"
-      description="A full breakdown of instant execution, AI error explanations, multi-language support, and more is landing in the next phase."
-    />
+    <main className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col selection:bg-[var(--syn-keyword)] selection:text-white">
+      <Navbar />
+
+      {/* Hero Header */}
+      <section className="relative pt-32 pb-16 sm:pt-40 sm:pb-24 editor-grid overflow-hidden">
+        <div className="blob h-[450px] w-[450px] bg-[var(--syn-keyword)] -top-40 -left-20 opacity-30" />
+        <div className="blob h-[400px] w-[400px] bg-[var(--syn-function)] top-20 -right-20 opacity-25" />
+
+        <div className="relative mx-auto max-w-5xl px-5 sm:px-8 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 text-xs font-mono text-[var(--syn-function)] border border-emerald-500/20 mb-6">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Built for Students, Engineers & Educators</span>
+          </div>
+
+          <h1 className="font-display text-4xl sm:text-6xl font-bold tracking-tight leading-tight">
+            An Intelligent IDE Platform That <br />
+            <span className="text-gradient">Teaches as You Code</span>
+          </h1>
+
+          <p className="mt-6 text-lg sm:text-xl text-[var(--ink-dim)] max-w-3xl mx-auto leading-relaxed">
+            Explore the powerful tools engineered into Cryptic to Clear — from native local compilers and instant AI error tutoring to step-by-step visual debugging.
+          </p>
+
+          <div className="mt-8 flex justify-center gap-4">
+            <Link
+              href="/compiler"
+              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all shadow-lg shadow-cyan-500/20"
+            >
+              <Code2 className="h-4 w-4" />
+              Launch IDE Compiler
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive Feature Explorer */}
+      <section className="relative py-16 mx-auto max-w-7xl px-5 sm:px-8 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Navigation Sidebar */}
+          <div className="lg:col-span-4 flex flex-col gap-3">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[var(--ink-faint)] px-3 mb-1">
+              Core Platform Capabilities
+            </h3>
+            {features.map((feat, idx) => {
+              const Icon = feat.icon;
+              const isActive = activeTab === idx;
+              return (
+                <button
+                  key={feat.id}
+                  onClick={() => setActiveTab(idx)}
+                  className={`flex items-start gap-4 p-4 rounded-xl text-left transition-all duration-200 border ${
+                    isActive
+                      ? "glass-strong border-cyan-500/40 shadow-lg shadow-cyan-500/10 scale-[1.02]"
+                      : "glass border-white/5 hover:border-white/10 hover:bg-white/5"
+                  }`}
+                >
+                  <span
+                    className={`p-2.5 rounded-lg ${
+                      isActive
+                        ? "bg-gradient-to-br from-[var(--syn-keyword)] to-[var(--syn-function)] text-[#0a0d13]"
+                        : "bg-white/5 text-[var(--ink-dim)]"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h4 className="font-display font-semibold text-sm text-[var(--ink)]">
+                      {feat.title}
+                    </h4>
+                    <p className="text-xs text-[var(--ink-dim)] mt-0.5">
+                      {feat.subtitle}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Feature Display Card */}
+          <div className="lg:col-span-8 glass-strong rounded-2xl p-6 sm:p-10 border border-white/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+              {(() => {
+                const Icon = features[activeTab].icon;
+                return <Icon className="h-64 w-64 text-cyan-400" />;
+              })()}
+            </div>
+
+            <div className="relative z-10">
+              <span className="inline-block font-mono text-xs text-[var(--syn-function)] uppercase tracking-wider mb-2">
+                {features[activeTab].subtitle}
+              </span>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-[var(--ink)] mb-4">
+                {features[activeTab].title}
+              </h2>
+              <p className="text-[var(--ink-dim)] text-base leading-relaxed mb-8">
+                {features[activeTab].description}
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                  <h4 className="text-xs font-mono text-[var(--syn-keyword)] uppercase tracking-wider mb-3">
+                    Key Advantages
+                  </h4>
+                  <ul className="flex flex-col gap-2.5">
+                    {features[activeTab].highlights.map((h, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-[var(--ink-dim)]">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span>{h}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-mono text-[var(--syn-const)] uppercase tracking-wider mb-3">
+                    Live Output Spec
+                  </h4>
+                  <div className="bg-[#0b0f17] rounded-xl p-4 font-mono text-xs text-emerald-400/90 border border-white/10 shadow-inner whitespace-pre-wrap leading-relaxed">
+                    {features[activeTab].codeSnippet}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                <span className="text-xs text-[var(--ink-faint)] font-mono">
+                  Supported Languages: C, C++, Java, Python
+                </span>
+                <Link
+                  href="/compiler"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--syn-function)] hover:underline"
+                >
+                  <span>Try in Editor</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security & Reliability Banner */}
+      <section className="py-16 mx-auto max-w-7xl px-5 sm:px-8 w-full">
+        <div className="glass rounded-2xl p-8 sm:p-12 border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="flex items-start gap-4">
+              <span className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                <ShieldCheck className="h-6 w-6" />
+              </span>
+              <div>
+                <h3 className="font-display font-semibold text-base">Isolated Execution</h3>
+                <p className="text-xs text-[var(--ink-dim)] mt-1">
+                  Processes run in isolated temporary workspaces with hard time limiters and memory bounds.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <span className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400">
+                <Zap className="h-6 w-6" />
+              </span>
+              <div>
+                <h3 className="font-display font-semibold text-base">Instant AI Fallback</h3>
+                <p className="text-xs text-[var(--ink-dim)] mt-1">
+                  When local compilers aren't installed, execution falls back seamlessly to multi-provider AI APIs.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <span className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
+                <Bot className="h-6 w-6" />
+              </span>
+              <div>
+                <h3 className="font-display font-semibold text-base">Structured Output Schemas</h3>
+                <p className="text-xs text-[var(--ink-dim)] mt-1">
+                  Strict JSON schema constraints ensure reproducible, accurate AI explanations without hallucinations.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </main>
   );
 }

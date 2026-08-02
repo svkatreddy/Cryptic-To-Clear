@@ -41,8 +41,7 @@ export default function Navbar() {
             <Terminal className="h-4 w-4 text-[#0a0d13]" strokeWidth={2.5} />
           </span>
           <span className="font-display font-semibold text-[15px] sm:text-[17px] tracking-tight text-[var(--ink)]">
-            Code<span className="text-gradient">Mentor</span>
-            <span className="font-mono text-[var(--syn-const)]"> AI</span>
+            Cryptic <span className="text-gradient">to Clear</span>
           </span>
         </Link>
 

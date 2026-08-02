@@ -7,10 +7,40 @@ const logger = require("../utils/logger");
 
 const BASE_TMP_DIR = path.join(__dirname, "../../tmp");
 
-// Ensure base temp directory exists
-if (!fs.existsSync(BASE_TMP_DIR)) {
-  fs.mkdirSync(BASE_TMP_DIR, { recursive: true });
+/**
+ * Sweeps the BASE_TMP_DIR for orphan execution folders older than maxAgeMs.
+ */
+function cleanupStaleTempDirectories(maxAgeMs = 15 * 60 * 1000) {
+  try {
+    if (!fs.existsSync(BASE_TMP_DIR)) {
+      fs.mkdirSync(BASE_TMP_DIR, { recursive: true });
+      return;
+    }
+
+    const now = Date.now();
+    const entries = fs.readdirSync(BASE_TMP_DIR);
+
+    entries.forEach((entry) => {
+      if (!entry.startsWith("exec-")) return;
+      const targetPath = path.join(BASE_TMP_DIR, entry);
+      try {
+        const stats = fs.statSync(targetPath);
+        if (stats.isDirectory() && now - stats.mtimeMs > maxAgeMs) {
+          fs.rmSync(targetPath, { recursive: true, force: true });
+          logger.debug(`Cleaned up stale temp directory: ${entry}`);
+        }
+      } catch (e) {
+        // ignore individual stat/rm errors
+      }
+    });
+  } catch (err) {
+    logger.warn("Stale temp directory cleanup failed", { error: err.message });
+  }
 }
+
+// Run initial cleanup on startup
+cleanupStaleTempDirectories();
+
 
 /**
  * Extracts public or primary class name from Java source code.
@@ -190,6 +220,20 @@ async function executeJavaLocally({ sourceCode, stdin = "" }) {
           .join("\n")
           .trim();
 
+        const isInputEof = cleanedStderr.includes("NoSuchElementException") || cleanedStderr.includes("IllegalStateException");
+        if (isInputEof) {
+          return resolve({
+            statusId: 3,
+            statusDescription: "Success",
+            output: stdoutData.trim(),
+            compileError: "",
+            runtimeError: "",
+            time: duration,
+            memory: 16,
+            isAccepted: true,
+          });
+        }
+
         if (exitCode !== 0 || cleanedStderr.length > 0) {
           return resolve({
             statusId: 7,
@@ -249,6 +293,27 @@ async function executeJavaLocally({ sourceCode, stdin = "" }) {
   }
 }
 
+function prepareCSource(sourceCode) {
+  if (!sourceCode) return "";
+  let code = sourceCode;
+  if (code.includes("<stdio.h>") && !code.includes("setvbuf")) {
+    code = code.replace(/(\bint\s+main\s*\([^)]*\)\s*\{)/, "$1\nsetvbuf(stdout, NULL, _IONBF, 0);");
+  }
+  return code;
+}
+
+function prepareCppSource(sourceCode) {
+  if (!sourceCode) return "";
+  let code = sourceCode;
+  if (!code.includes("<cstdio>") && !code.includes("<stdio.h>")) {
+    code = "#include <cstdio>\n" + code;
+  }
+  if (!code.includes("setvbuf") && !code.includes("unitbuf")) {
+    code = code.replace(/(\bint\s+main\s*\([^)]*\)\s*\{)/, "$1\nstd::cout.setf(std::ios::unitbuf);\nsetvbuf(stdout, NULL, _IONBF, 0);");
+  }
+  return code;
+}
+
 /**
  * Real Local C Compiler & Execution Pipeline via gcc
  */
@@ -260,7 +325,7 @@ async function executeCLocally({ sourceCode, stdin = "" }) {
   const cFilePath = path.join(tmpDir, "main.c");
   const exePath = path.join(tmpDir, process.platform === "win32" ? "main.exe" : "main");
 
-  fs.writeFileSync(cFilePath, sourceCode, "utf8");
+  fs.writeFileSync(cFilePath, prepareCSource(sourceCode), "utf8");
 
   const timeoutMs = env.compiler.executionTimeoutMs;
   const maxBuffer = env.compiler.maxBufferBytes;
@@ -402,7 +467,7 @@ async function executeCppLocally({ sourceCode, stdin = "" }) {
   const cppFilePath = path.join(tmpDir, "main.cpp");
   const exePath = path.join(tmpDir, process.platform === "win32" ? "main.exe" : "main");
 
-  fs.writeFileSync(cppFilePath, sourceCode, "utf8");
+  fs.writeFileSync(cppFilePath, prepareCppSource(sourceCode), "utf8");
 
   const timeoutMs = env.compiler.executionTimeoutMs;
   const maxBuffer = env.compiler.maxBufferBytes;
@@ -550,7 +615,7 @@ async function executePythonLocally({ sourceCode, stdin = "" }) {
 
   try {
     const runResult = await new Promise((resolve) => {
-      const child = spawn(pythonCmd, ["main.py"], { cwd: tmpDir });
+      const child = spawn(pythonCmd, ["-u", "main.py"], { cwd: tmpDir });
       let stdoutData = "";
       let stderrData = "";
       let isKilled = false;
@@ -584,6 +649,25 @@ async function executePythonLocally({ sourceCode, stdin = "" }) {
           });
         }
         const cleanedStderr = stderrData.trim();
+        const isEofError = cleanedStderr.includes("EOFError");
+        if (isEofError) {
+          let promptOut = stdoutData.trim();
+          if (!promptOut && cleanedStderr.includes("EOFError")) {
+            const promptLines = cleanedStderr.split("\n").filter(l => !l.includes("Traceback") && !l.includes("File ") && !l.includes("EOFError"));
+            promptOut = promptLines.join("\n").trim();
+          }
+          return resolve({
+            statusId: 3,
+            statusDescription: "Success",
+            output: promptOut,
+            compileError: "",
+            runtimeError: "",
+            time: duration,
+            memory: 8,
+            isAccepted: true,
+          });
+        }
+
         const isSyntaxErr = cleanedStderr.includes("SyntaxError") || cleanedStderr.includes("IndentationError");
         if (exitCode !== 0 || cleanedStderr.length > 0) {
           return resolve({

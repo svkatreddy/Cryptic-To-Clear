@@ -1099,8 +1099,11 @@ const EXECUTION_SYSTEM_PROMPT =
   "Produce the exact stdout stream exactly as a terminal would display it.\n\n" +
 
   "==============================\n" +
-  "STDIN HANDLING\n" +
+  "STDIN & INPUT PROMPT RULES\n" +
   "==============================\n" +
+
+  "CRITICAL REQUIREMENT:\n" +
+  "Any output statement or prompt string that occurs BEFORE an input statement (e.g., printf(\"Enter your name: \"), std::cout << \"Enter age: \", System.out.print(\"Enter city: \"), input(\"Enter username: \")) MUST BE INCLUDED IN THE 'output' FIELD IMMEDIATELY.\n\n" +
 
   "When an input statement is encountered (including but not limited to scanf, getchar, fgets, cin, getline, Scanner, BufferedReader, input(), fmt.Scan, Console.ReadLine, readLine, stdin readers, etc.):\n\n" +
 
@@ -1111,11 +1114,11 @@ const EXECUTION_SYSTEM_PROMPT =
   "- Continue execution.\n\n" +
 
   "2. If no stdin values remain:\n" +
-  "- Stop execution immediately.\n" +
+  "- Stop execution immediately at that input prompt.\n" +
   "- Do NOT raise EOF.\n" +
   "- Do NOT generate Runtime Error.\n" +
   "- Do NOT invent input.\n" +
-  "- Keep every output produced before the input request.\n" +
+  "- Include ALL preceding output and prompt text in the 'output' field.\n" +
   "- Return:\n" +
   'statusId = 3\n' +
   'statusDescription = "Success"\n' +
@@ -1184,7 +1187,10 @@ Source Code:
 ${sourceCode}
 
 Standard Input (stdin):
-${hasStdin ? stdin : "[NO STDIN VALUES PROVIDED]"}`;
+${hasStdin ? stdin : "[NO STDIN VALUES PROVIDED]"}
+
+CRITICAL OUTPUT INSTRUCTION FOR INPUT PROMPTS:
+If the source code calls an input function with a prompt string (such as input("Enter your username: "), printf("Enter name: "), cout << "Enter age: ", System.out.print("Enter city: ")), and no stdin is provided, you MUST include that prompt string in the "output" field!`;
 }
 
 function cleanTerminalOutput(raw) {
@@ -1410,30 +1416,6 @@ function validatePythonCode(sourceCode) {
 async function runCode({ language, sourceCode, stdin }) {
   const langKey = (language || "").toLowerCase();
 
-  // Pre-validate C compilation rules deterministically
-  if (langKey === "c") {
-    const cValError = validateCCode(sourceCode);
-    if (cValError) return cValError;
-  }
-
-  // Pre-validate C++ compilation rules deterministically
-  if (langKey === "cpp" || langKey === "c++") {
-    const cppValError = validateCppCode(sourceCode);
-    if (cppValError) return cppValError;
-  }
-
-  // Pre-validate Java compilation rules deterministically
-  if (langKey === "java") {
-    const javaValError = validateJavaCode(sourceCode);
-    if (javaValError) return javaValError;
-  }
-
-  // Pre-validate Python compilation rules deterministically
-  if (langKey === "python" || langKey === "py") {
-    const pyValError = validatePythonCode(sourceCode);
-    if (pyValError) return pyValError;
-  }
-
   // Fast Local Execution for JavaScript (< 2ms)
   if (langKey === "javascript" || langKey === "js") {
     const vm = require("vm");
@@ -1483,14 +1465,27 @@ async function runCode({ language, sourceCode, stdin }) {
     }
   }
 
+  if (langKey === "c") {
+    const cValidation = validateCCode(sourceCode);
+    if (cValidation) {
+      return cValidation;
+    }
+  }
+
   // Fast AI Execution via Groq (llama-3.1-8b-instant)
   try {
+    const userPrompt = buildExecutionPrompt({ language, sourceCode, stdin });
+
+    if (langKey === "python" || langKey === "py") {
+      console.log("[GROQ EXECUTION PROMPT]:\n" + userPrompt);
+    }
+
     const { content } = await requestWithFallback({
       temperature: 0.0,
       maxTokens: 300,
       messages: [
         { role: "system", content: EXECUTION_SYSTEM_PROMPT },
-        { role: "user", content: buildExecutionPrompt({ language, sourceCode, stdin }) },
+        { role: "user", content: userPrompt },
       ],
       responseFormat: { type: "json_object" },
       isChat: true,
