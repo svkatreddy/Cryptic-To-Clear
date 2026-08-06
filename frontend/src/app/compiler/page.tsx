@@ -9,6 +9,7 @@ import AIPanel from "@/components/compiler/AIPanel";
 import BottomPanel, { BottomTab } from "@/components/compiler/BottomPanel";
 import { EditorSettings } from "@/components/compiler/CodeEditor";
 import { LANGUAGES, LanguageConfig, getLanguage } from "@/lib/languages";
+import { getStoredTheme, Theme } from "@/lib/theme";
 import {
   executeCode,
   explainError,
@@ -216,18 +217,34 @@ export default function CompilerPage() {
   // localStorage, which only exists client-side, so an effect is correct here)
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    const currentTheme = getStoredTheme();
+    setSettings((s) => ({ ...s, theme: currentTheme === "light" ? "light" : "vs-dark" }));
+
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed: PersistedState = JSON.parse(raw);
         setLanguage(parsed.language ?? "c");
         setCodeMap({ ...defaultCodeMap(), ...parsed.code });
-        setSettings((s) => ({ ...s, ...parsed.settings }));
+        setSettings((s) => ({
+          ...s,
+          ...parsed.settings,
+          theme: currentTheme === "light" ? "light" : "vs-dark",
+        }));
         setAutoSave(parsed.autoSave ?? true);
       }
     } catch {
       // ignore corrupted storage
     }
+
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ theme: Theme }>;
+      const t = customEvent.detail?.theme || getStoredTheme();
+      setSettings((s) => ({ ...s, theme: t === "light" ? "light" : "vs-dark" }));
+    };
+
+    window.addEventListener("themechange", handleThemeChange);
+    return () => window.removeEventListener("themechange", handleThemeChange);
   }, []);
 
   // Load chat history for this session (sessionStorage, so it clears when

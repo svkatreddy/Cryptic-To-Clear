@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
 const env = require("./config/env");
 const logger = require("./utils/logger");
 const errorHandler = require("./middleware/errorHandler");
@@ -27,6 +28,7 @@ app.use(
   })
 );
 
+app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 
 // Mount HTTP Request Logger

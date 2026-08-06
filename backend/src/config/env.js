@@ -66,6 +66,11 @@ const env = {
   piston: {
     baseUrl: process.env.PISTON_BASE_URL || "https://emkc.org/api/v2/piston",
   },
+  jwt: {
+    secret: process.env.JWT_SECRET || "cryptic-to-clear-jwt-secret-key-2026-key",
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    cookieMaxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+  },
   compiler: {
     javaPath: process.env.JAVA_PATH || "java",
     javacPath: process.env.JAVAC_PATH || "javac",

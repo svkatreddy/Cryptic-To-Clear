@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     "Cryptic to Clear: A tiny compiler that explains its own errors. Write code, run instantly, and understand every compiler error using AI.",
 };
 
+import { AuthProvider } from "@/context/AuthContext";
+import AuthModal from "@/components/auth/AuthModal";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,7 +45,10 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased bg-[var(--bg)] text-[var(--ink)]`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+          <AuthModal />
+        </AuthProvider>
       </body>
     </html>
   );

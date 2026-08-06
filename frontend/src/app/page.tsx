@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import FeatureHighlights from "@/components/FeatureHighlights";
+import AuthSection from "@/components/auth/AuthSection";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -9,6 +10,7 @@ export default function Home() {
       <Navbar />
       <Hero />
       <FeatureHighlights />
+      <AuthSection />
       <Footer />
     </main>
   );

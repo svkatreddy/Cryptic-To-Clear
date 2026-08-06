@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Terminal } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "@/context/AuthContext";
+import UserMenu from "./auth/UserMenu";
+import { LogIn } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -17,6 +20,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const router = useRouter();
+  const { user, openAuthModal } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -60,9 +64,21 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* CTA */}
+        {/* CTA & User Menu */}
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
+          {user ? (
+            <UserMenu />
+          ) : (
+            <button
+              onClick={() => openAuthModal("login")}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-mono text-xs text-[var(--ink)] glass hover:bg-white/[0.08] border border-white/10 transition-all cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5 text-[var(--syn-keyword)]" />
+              <span>Sign In</span>
+            </button>
+          )}
+
           <Link
             href="/compiler"
             prefetch={true}
@@ -108,6 +124,22 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
+
+              {!user && (
+                <li className="pt-1">
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      openAuthModal("login");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-mono text-[var(--ink)] glass border border-white/10"
+                  >
+                    <LogIn className="w-4 h-4 text-[var(--syn-keyword)]" />
+                    <span>Sign In / Create Account</span>
+                  </button>
+                </li>
+              )}
+
               <li className="pt-2">
                 <Link
                   href="/compiler"

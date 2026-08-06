@@ -19,6 +19,9 @@ export function applyTheme(theme: Theme) {
   } catch {
     // ignore quota / privacy-mode errors
   }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("themechange", { detail: { theme } }));
+  }
 }
 
 /**

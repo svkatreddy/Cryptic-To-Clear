@@ -11,6 +11,17 @@ export default function ThemeToggle({ className }: { className?: string }) {
   useEffect(() => {
     // One-time hydration from localStorage, which only exists client-side.
     setTheme(getStoredTheme());
+
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ theme: Theme }>;
+      if (customEvent.detail?.theme) {
+        setTheme(customEvent.detail.theme);
+      } else {
+        setTheme(getStoredTheme());
+      }
+    };
+    window.addEventListener("themechange", handleThemeChange);
+    return () => window.removeEventListener("themechange", handleThemeChange);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 

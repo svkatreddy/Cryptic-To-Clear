@@ -173,7 +173,7 @@ export default function ExportMenu({
                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                 transition={{ duration: 0.15 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="w-64 rounded-lg p-1.5 shadow-2xl border border-white/10 bg-[#0d1117]/95 backdrop-blur-xl text-white"
+                className="w-64 rounded-lg p-1.5 shadow-2xl border border-[var(--border-strong)] glass-strong text-[var(--ink)]"
                 style={{
                   position: "fixed",
                   left: menuPosition.left,
@@ -196,14 +196,14 @@ export default function ExportMenu({
                     }}
                     disabled={item.disabled}
                     title={item.disabled ? item.disabledHint : undefined}
-                    className="w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[12px] text-left transition-colors hover:bg-white/10 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    className="w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[12px] text-left transition-colors hover:bg-[var(--border)] disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
                   >
                     {justRan === item.key ? (
                       <Check className="h-3.5 w-3.5 text-[var(--syn-string)] shrink-0" />
                     ) : (
-                      <item.icon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <item.icon className="h-3.5 w-3.5 text-[var(--ink-faint)] shrink-0" />
                     )}
-                    <span className="text-gray-200">{item.label}</span>
+                    <span className="text-[var(--ink-dim)] hover:text-[var(--ink)]">{item.label}</span>
                   </button>
                 ))}
               </motion.div>

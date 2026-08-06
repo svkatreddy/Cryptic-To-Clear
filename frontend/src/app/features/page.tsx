@@ -249,13 +249,13 @@ nums = [1, 2, 3]`,
                   <h4 className="text-xs font-mono text-[var(--syn-const)] uppercase tracking-wider mb-3">
                     Live Output Spec
                   </h4>
-                  <div className="bg-[#0b0f17] rounded-xl p-4 font-mono text-xs text-emerald-400/90 border border-white/10 shadow-inner whitespace-pre-wrap leading-relaxed">
+                  <div className="bg-[var(--bg)] rounded-xl p-4 font-mono text-xs text-[var(--syn-string)] border border-[var(--border)] shadow-inner whitespace-pre-wrap leading-relaxed">
                     {features[activeTab].codeSnippet}
                   </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+              <div className="pt-4 border-t border-[var(--border)] flex items-center justify-between">
                 <span className="text-xs text-[var(--ink-faint)] font-mono">
                   Supported Languages: C, C++, Java, Python
                 </span>

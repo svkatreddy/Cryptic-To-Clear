@@ -1,0 +1,154 @@
+"use client";
+
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { User, loginUser, registerUser, logoutUser, fetchMe, requestForgotPassword } from "@/lib/api";
+
+type AuthTab = "login" | "register" | "forgot";
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  loading: boolean;
+  isGuest: boolean;
+  isAuthModalOpen: boolean;
+  authModalTab: AuthTab;
+  openAuthModal: (tab?: AuthTab) => void;
+  closeAuthModal: () => void;
+  login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  register: (name: string, email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  logout: () => Promise<void>;
+  continueAsGuest: () => void;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string; demoNote?: string }>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<AuthTab>("login");
+
+  useEffect(() => {
+    // Check initial auth state
+    const savedToken = typeof window !== "undefined" ? localStorage.getItem("c2c_token") : null;
+    const guestStatus = typeof window !== "undefined" ? localStorage.getItem("c2c_guest") === "true" : true;
+
+    if (savedToken) {
+      setToken(savedToken);
+    }
+    setIsGuest(guestStatus);
+
+    fetchMe(savedToken || undefined)
+      .then((res) => {
+        if (res.success && res.user) {
+          setUser(res.user);
+          setIsGuest(false);
+        } else {
+          setUser(null);
+          // If token failed validation, clean up
+          if (savedToken) {
+            localStorage.removeItem("c2c_token");
+            setToken(null);
+          }
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const openAuthModal = (tab: AuthTab = "login") => {
+    setAuthModalTab(tab);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+  };
+
+  const login = async (email: string, pass: string) => {
+    const res = await loginUser(email, pass);
+    if (res.success && res.user) {
+      setUser(res.user);
+      setIsGuest(false);
+      localStorage.setItem("c2c_guest", "false");
+      if (res.token) {
+        setToken(res.token);
+        localStorage.setItem("c2c_token", res.token);
+      }
+      setIsAuthModalOpen(false);
+      return { success: true, message: res.message };
+    }
+    return { success: false, message: res.message || "Invalid credentials." };
+  };
+
+  const register = async (name: string, email: string, pass: string) => {
+    const res = await registerUser(name, email, pass);
+    if (res.success && res.user) {
+      setUser(res.user);
+      setIsGuest(false);
+      localStorage.setItem("c2c_guest", "false");
+      if (res.token) {
+        setToken(res.token);
+        localStorage.setItem("c2c_token", res.token);
+      }
+      setIsAuthModalOpen(false);
+      return { success: true, message: res.message };
+    }
+    return { success: false, message: res.message || "Registration failed." };
+  };
+
+  const logout = async () => {
+    await logoutUser();
+    setUser(null);
+    setToken(null);
+    setIsGuest(true);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("c2c_token");
+      localStorage.setItem("c2c_guest", "true");
+    }
+  };
+
+  const continueAsGuest = () => {
+    setIsGuest(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("c2c_guest", "true");
+    }
+    setIsAuthModalOpen(false);
+  };
+
+  const forgotPassword = async (email: string) => {
+    return requestForgotPassword(email);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isGuest,
+        isAuthModalOpen,
+        authModalTab,
+        openAuthModal,
+        closeAuthModal,
+        login,
+        register,
+        logout,
+        continueAsGuest,
+        forgotPassword,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

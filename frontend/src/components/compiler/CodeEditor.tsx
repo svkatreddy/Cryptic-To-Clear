@@ -112,7 +112,7 @@ export default function CodeEditor({
     <Editor
       language={language}
       value={value}
-      theme={settings.theme === "vs-dark" ? "codementor-dark" : "vs"}
+      theme={settings.theme === "vs-dark" ? "codementor-dark" : "codementor-light"}
       onChange={(v) => onChange(v ?? "")}
       onMount={handleMount}
       beforeMount={(monaco) => {
@@ -126,6 +126,18 @@ export default function CodeEditor({
             "editorGutter.background": "#0d1119",
             "editorLineNumber.foreground": "#3a4356",
             "editorLineNumber.activeForeground": "#8993a4",
+          },
+        });
+        monaco.editor.defineTheme("codementor-light", {
+          base: "vs",
+          inherit: true,
+          rules: [],
+          colors: {
+            "editor.background": "#ffffff",
+            "editor.lineHighlightBackground": "#f0f4f9",
+            "editorGutter.background": "#ffffff",
+            "editorLineNumber.foreground": "#94a3b8",
+            "editorLineNumber.activeForeground": "#334155",
           },
         });
       }}
@@ -150,7 +162,7 @@ export default function CodeEditor({
         tabSize: 2,
       }}
       loading={
-        <div className="flex h-full w-full flex-col gap-2 bg-[#0d1119] p-4">
+        <div className="flex h-full w-full flex-col gap-2 bg-[var(--bg)] p-4">
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={i}

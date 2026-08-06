@@ -6,6 +6,7 @@
   --bg-elevated: #10141c;
   --panel: #12161f;
   --panel-glass: rgba(18, 22, 31, 0.55);
+  --panel-glass-strong: rgba(18, 22, 31, 0.85);
   --border: rgba(148, 163, 184, 0.12);
   --border-strong: rgba(148, 163, 184, 0.22);
 
@@ -32,7 +33,8 @@
   --bg: #f4f6f9;
   --bg-elevated: #ffffff;
   --panel: #ffffff;
-  --panel-glass: rgba(255, 255, 255, 0.68);
+  --panel-glass: rgba(255, 255, 255, 0.75);
+  --panel-glass-strong: rgba(255, 255, 255, 0.92);
   --border: rgba(15, 23, 42, 0.10);
   --border-strong: rgba(15, 23, 42, 0.20);
 
@@ -53,10 +55,10 @@
 }
 
 :root.light ::-webkit-scrollbar-thumb {
-  background: #d3d9e3;
+  background: #cbd5e1;
 }
 :root.light ::-webkit-scrollbar-thumb:hover {
-  background: #b9c1cf;
+  background: #94a3b8;
 }
 
 :root.light .blob {
@@ -94,7 +96,7 @@ body {
 }
 
 .glass-strong {
-  background: rgba(18, 22, 31, 0.75);
+  background: var(--panel-glass-strong);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid var(--border-strong);
@@ -103,14 +105,19 @@ body {
 /* Faint editor grid texture for background atmosphere */
 .editor-grid {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
   background-size: 42px 42px;
+}
+:root.light .editor-grid {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
 }
 
 /* Gradient text */
 .text-gradient {
-  background: linear-gradient(100deg, #b892ff 0%, #6cb6ff 55%, #9ee6a8 100%);
+  background: linear-gradient(100deg, var(--syn-keyword) 0%, var(--syn-function) 55%, var(--syn-string) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -179,5 +186,5 @@ body {
 /* Custom scrollbar to match theme */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #262c38; border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: #333b4a; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }

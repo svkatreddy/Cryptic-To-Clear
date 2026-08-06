@@ -52,21 +52,21 @@ export default function BottomPanel({
   const isExecutionActive = status !== "idle" || output.length > 0 || errors.length > 0;
 
   return (
-    <div className="flex h-full flex-col border-t border-[var(--border)] bg-[#0d1117] text-[var(--ink)] font-sans">
+    <div className="flex h-full flex-col border-t border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--ink)] font-sans">
       {/* Drag handle */}
       <div
         onMouseDown={onResizeStart}
-        className="h-2 w-full flex items-center justify-center cursor-row-resize group shrink-0 -mt-1 hover:bg-white/5 transition-colors"
+        className="h-2 w-full flex items-center justify-center cursor-row-resize group shrink-0 -mt-1 hover:bg-[var(--border)] transition-colors"
       >
         <GripHorizontal className="h-3 w-8 text-[var(--ink-faint)] group-hover:text-[var(--ink-dim)] transition-colors" />
       </div>
 
       {/* Programiz Header Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border)] shrink-0 bg-[#161b22]">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border)] shrink-0 bg-[var(--panel)]">
         <div className="flex items-center gap-2">
-          <span className="text-[14px] font-semibold text-[#e6edf3]">Output</span>
+          <span className="text-[14px] font-semibold text-[var(--ink)]">Output</span>
           {status === "running" && (
-            <span className="text-[11px] font-mono text-amber-400 animate-pulse ml-2">
+            <span className="text-[11px] font-mono text-[var(--syn-const)] animate-pulse ml-2">
               Running...
             </span>
           )}
@@ -75,7 +75,7 @@ export default function BottomPanel({
         <button
           type="button"
           onClick={onClearOutput}
-          className="px-3 py-1 text-[12px] font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-md transition-colors cursor-pointer"
+          className="px-3 py-1 text-[12px] font-medium text-[var(--ink-dim)] hover:text-[var(--ink)] glass border border-[var(--border)] rounded-md transition-colors cursor-pointer"
         >
           Clear
         </button>
@@ -86,11 +86,11 @@ export default function BottomPanel({
         onClick={() => {
           if (isExecutionActive) promptInputRef.current?.focus();
         }}
-        className="flex-1 p-4 font-mono text-[13px] bg-[#0d1117] overflow-y-auto cursor-text flex flex-col selection:bg-blue-500/30 select-text"
+        className="flex-1 p-4 font-mono text-[13px] bg-[var(--bg)] overflow-y-auto cursor-text flex flex-col selection:bg-blue-500/30 select-text"
       >
         {/* Errors (if any) */}
         {errors && (
-          <pre className="whitespace-pre-wrap text-rose-400 font-mono text-[13px] leading-relaxed mb-2">
+          <pre className="whitespace-pre-wrap text-[var(--syn-const)] font-mono text-[13px] leading-relaxed mb-2">
             {errors}
           </pre>
         )}
@@ -104,7 +104,7 @@ export default function BottomPanel({
               return (
                 <div
                   key={idx}
-                  className={isInputLine ? "text-cyan-400 font-bold" : "text-[#e6edf3]"}
+                  className={isInputLine ? "text-[var(--syn-function)] font-bold" : "text-[var(--ink)]"}
                 >
                   {line}
                 </div>
@@ -117,9 +117,9 @@ export default function BottomPanel({
         {isExecutionActive && (
           <form
             onSubmit={handleSendPrompt}
-            className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10 shrink-0 font-mono"
+            className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--border)] shrink-0 font-mono"
           >
-            <span className="text-emerald-400 font-bold text-[13px] shrink-0">$</span>
+            <span className="text-[var(--syn-string)] font-bold text-[13px] shrink-0">$</span>
             <input
               ref={promptInputRef}
               type="text"
@@ -127,15 +127,15 @@ export default function BottomPanel({
               onChange={(e) => setTerminalPrompt(e.target.value)}
               disabled={isRunning}
               placeholder={isRunning ? "Executing..." : "Enter input..."}
-              className="flex-1 bg-transparent text-white font-mono text-[13px] placeholder:text-gray-600 border-none outline-none focus:ring-0 p-0 disabled:opacity-50"
+              className="flex-1 bg-transparent text-[var(--ink)] font-mono text-[13px] placeholder:text-[var(--ink-faint)] border-none outline-none focus:ring-0 p-0 disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={isRunning || !terminalPrompt.trim()}
-              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono rounded bg-[var(--syn-string)]/20 hover:bg-[var(--syn-string)]/30 text-[var(--syn-string)] border border-[var(--syn-string)]/30 transition-colors disabled:opacity-40 cursor-pointer shrink-0"
             >
               <span>Enter</span>
-              <CornerDownLeft className="h-3 w-3 text-emerald-400" />
+              <CornerDownLeft className="h-3 w-3 text-[var(--syn-string)]" />
             </button>
           </form>
         )}

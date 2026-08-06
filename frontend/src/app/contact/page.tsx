@@ -93,7 +93,7 @@ export default function ContactPage() {
                       placeholder="Alex Dev"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full bg-[#0b0f17] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-[var(--ink)] placeholder:text-white/20 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                      className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-[var(--syn-function)] transition-colors"
                     />
                   </div>
 
@@ -106,7 +106,7 @@ export default function ContactPage() {
                       placeholder="alex@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full bg-[#0b0f17] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-[var(--ink)] placeholder:text-white/20 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                      className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-[var(--syn-function)] transition-colors"
                     />
                   </div>
                 </div>
@@ -118,12 +118,12 @@ export default function ContactPage() {
                   <select
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full bg-[#0b0f17] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--syn-function)] transition-colors"
                   >
-                    <option value="feedback">Product Feedback & Feature Request</option>
-                    <option value="bug">Report a Bug / Compiler Error Issue</option>
-                    <option value="integration">API & Self-Hosting Inquiry</option>
-                    <option value="other">General Question</option>
+                    <option value="feedback" className="bg-[var(--panel)] text-[var(--ink)]">Product Feedback & Feature Request</option>
+                    <option value="bug" className="bg-[var(--panel)] text-[var(--ink)]">Report a Bug / Compiler Error Issue</option>
+                    <option value="integration" className="bg-[var(--panel)] text-[var(--ink)]">API & Self-Hosting Inquiry</option>
+                    <option value="other" className="bg-[var(--panel)] text-[var(--ink)]">General Question</option>
                   </select>
                 </div>
 
@@ -136,7 +136,7 @@ export default function ContactPage() {
                     placeholder="Tell us how we can help or how to improve Cryptic to Clear..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full bg-[#0b0f17] border border-white/10 rounded-xl px-4 py-3 text-sm text-[var(--ink)] placeholder:text-white/20 focus:outline-none focus:border-cyan-500/50 transition-colors resize-none"
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-[var(--syn-function)] transition-colors resize-none"
                   />
                 </div>
 

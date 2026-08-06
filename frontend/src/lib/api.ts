@@ -557,3 +557,127 @@ export async function executeCode(
     };
   }
 }
+
+/* ==========================================================================
+   AUTHENTICATION & USER TYPES AND APIS
+   ========================================================================== */
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  provider: "local" | "google" | "github";
+  role: "user" | "admin";
+  plan: "free" | "pro" | "team" | "enterprise";
+  subscriptionStatus: "active" | "inactive" | "trialing" | "canceled";
+  subscriptionExpiry?: string | null;
+  credits: number;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message?: string;
+  user?: User;
+  token?: string;
+}
+
+export async function loginUser(email: string, password: string): Promise<AuthResponse> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.success === false) {
+      return {
+        success: false,
+        message: data?.message || "Invalid credentials.",
+      };
+    }
+    return data as AuthResponse;
+  } catch {
+    return {
+      success: false,
+      message: "Could not connect to authentication server.",
+    };
+  }
+}
+
+export async function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.success === false) {
+      return {
+        success: false,
+        message: data?.message || "Could not complete registration.",
+      };
+    }
+    return data as AuthResponse;
+  } catch {
+    return {
+      success: false,
+      message: "Could not connect to registration server.",
+    };
+  }
+}
+
+export async function logoutUser(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => null);
+    return data || { success: true };
+  } catch {
+    return { success: true };
+  }
+}
+
+export async function fetchMe(token?: string): Promise<AuthResponse> {
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.success === false) {
+      return { success: false, message: data?.message || "Session unauthenticated." };
+    }
+    return data as AuthResponse;
+  } catch {
+    return { success: false, message: "Could not fetch user session." };
+  }
+}
+
+export async function requestForgotPassword(email: string): Promise<{ success: boolean; message: string; demoNote?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => null);
+    return data || { success: true, message: "Instructions dispatched." };
+  } catch {
+    return { success: false, message: "Network error requesting password reset." };
+  }
+}
+

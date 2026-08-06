@@ -10,6 +10,12 @@ const healthRoutes = require("./health.routes");
 const languagesRoutes = require("./languages.routes");
 const learnRoutes = require("./learn.routes");
 
+const authRoutes = require("../auth/auth.routes");
+const usersRoutes = require("../users/users.routes");
+const subscriptionsRoutes = require("../subscriptions/subscriptions.routes");
+const historyRoutes = require("../history/history.routes");
+const projectsRoutes = require("../projects/projects.routes");
+
 const router = express.Router();
 
 router.use("/health", healthRoutes);
@@ -21,5 +27,10 @@ router.use("/analyze", analyzeRoutes);
 router.use("/debug", debugRoutes);
 router.use("/learn", learnRoutes);
 router.use("/convert", convertRoutes);
+router.use("/auth", authRoutes);
+router.use("/users", usersRoutes);
+router.use("/subscriptions", subscriptionsRoutes);
+router.use("/history", historyRoutes);
+router.use("/projects", projectsRoutes);
 
 module.exports = router;

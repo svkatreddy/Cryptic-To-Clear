@@ -104,7 +104,7 @@ export default function LanguageDropdown({
                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                 transition={{ duration: 0.12 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="max-h-80 overflow-y-auto rounded-lg p-1.5 shadow-2xl border border-white/10 bg-[#0d1117]/95 backdrop-blur-xl text-white"
+                className="max-h-80 overflow-y-auto rounded-lg p-1.5 shadow-2xl border border-[var(--border-strong)] glass-strong text-[var(--ink)]"
                 style={{
                   position: "fixed",
                   left: menuPosition.left,
@@ -127,8 +127,8 @@ export default function LanguageDropdown({
                       onChange(lang.id);
                       setOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-mono text-left transition-colors cursor-pointer hover:bg-white/10 ${
-                      lang.id === value ? "bg-white/15 text-white" : "text-gray-300"
+                    className={`w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-mono text-left transition-colors cursor-pointer hover:bg-[var(--border)] ${
+                      lang.id === value ? "bg-[var(--border-strong)] text-[var(--ink)] font-semibold" : "text-[var(--ink-dim)]"
                     }`}
                   >
                     <span
