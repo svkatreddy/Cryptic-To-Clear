@@ -217,3 +217,93 @@ export function buildShareUrl(state: ShareState): string {
   url.searchParams.set("share", encoded);
   return url.toString();
 }
+
+/**
+ * Merges stdout and stdin lines side-by-side with prompt text (e.g., "Enter your name: sai"),
+ * matching how an interactive terminal shell displays input right next to print statements.
+ */
+export function interleaveInputWithOutput(rawOutput: string, stdinText: string): string {
+  if (!stdinText || !stdinText.trim()) {
+    return rawOutput || "";
+  }
+
+  const inputLines = stdinText
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  if (inputLines.length === 0) {
+    return rawOutput || "";
+  }
+
+  let text = (rawOutput || "").trimEnd();
+
+  // Strip any existing prefixed "> input" lines if auto-echoed previously
+  inputLines.forEach((val) => {
+    const escaped = val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    text = text.replace(new RegExp(`^>\\s*${escaped}\\r?\\n?`, "gm"), "");
+  });
+
+  const lines = text.split("\n");
+  const inputsToAssign = [...inputLines];
+  const resultLines: string[] = [];
+
+  const isPromptHeader = (str: string) => {
+    const s = str.trim();
+    if (!s) return false;
+    if (/[:?=>$]$/.test(s)) return true;
+    if (/^(enter|input|type|please|what|how|select|choose)\b/i.test(s)) return true;
+    return false;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (inputsToAssign.length === 0) {
+      resultLines.push(line);
+      continue;
+    }
+
+    // Check 1: Prompt line ending with colon/question mark with no text or only whitespace after it
+    // e.g. "Enter your name:", "Enter your age: "
+    const promptColonMatch = line.match(/^(.+?[:?=>$])\s*$/);
+    if (promptColonMatch && isPromptHeader(promptColonMatch[1])) {
+      const inputVal = inputsToAssign.shift()!;
+      const promptStr = promptColonMatch[1].endsWith(" ")
+        ? promptColonMatch[1]
+        : promptColonMatch[1] + " ";
+      resultLines.push(`${promptStr}${inputVal}`);
+      continue;
+    }
+
+    // Check 2: Prompt line with text after colon/question mark (due to lack of newline before next print)
+    // e.g. "Enter a number: You entered 42" -> Split into "Enter a number: 42" and "You entered 42"
+    const embeddedPromptMatch = line.match(/^(.+?[:?=>$])\s+(\S+.*)$/);
+    if (embeddedPromptMatch && isPromptHeader(embeddedPromptMatch[1])) {
+      const inputVal = inputsToAssign.shift()!;
+      const promptStr = embeddedPromptMatch[1].endsWith(" ")
+        ? embeddedPromptMatch[1]
+        : embeddedPromptMatch[1] + " ";
+      const restText = embeddedPromptMatch[2];
+      resultLines.push(`${promptStr}${inputVal}`);
+      resultLines.push(restText);
+      continue;
+    }
+
+    // Check 3: Line starting with prompt keywords without explicit colon (e.g. "Enter your name")
+    if (isPromptHeader(line) && !line.includes(":")) {
+      const inputVal = inputsToAssign.shift()!;
+      resultLines.push(`${line}: ${inputVal}`);
+      continue;
+    }
+
+    resultLines.push(line);
+  }
+
+  while (inputsToAssign.length > 0) {
+    const inputVal = inputsToAssign.shift()!;
+    resultLines.push(`> ${inputVal}`);
+  }
+
+  return resultLines.join("\n");
+}

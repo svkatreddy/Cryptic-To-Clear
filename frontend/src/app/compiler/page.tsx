@@ -30,6 +30,7 @@ import {
   printPlainText,
   buildShareUrl,
   decodeShareState,
+  interleaveInputWithOutput,
 } from "@/lib/exportUtils";
 import {
   ChatMessage,
@@ -726,7 +727,7 @@ export default function CompilerPage() {
       ? `Runtime Error:\n${result.runtimeError}`
       : "";
 
-    setOutput(result.output || "");
+    setOutput(interleaveInputWithOutput(result.output || "", initialStdin));
     setErrors(errorText);
     setExecutionTime(formatTime(result.time));
     setMemoryUsage(formatMemory(result.memory));
@@ -790,7 +791,7 @@ export default function CompilerPage() {
         ? `Runtime Error:\n${result.runtimeError}`
         : "";
 
-      setOutput(result.output || "");
+      setOutput(interleaveInputWithOutput(result.output || "", nextSessionInput));
       setErrors(errorText);
       setExecutionTime(formatTime(result.time));
       setMemoryUsage(formatMemory(result.memory));
@@ -1133,6 +1134,10 @@ export default function CompilerPage() {
                   setSessionInput("");
                 }}
                 isRunning={isRunning}
+                input={input}
+                onInputChange={setInput}
+                activeTab={bottomTab}
+                onTabChange={setBottomTab}
                 onResizeStart={(e) => {
                   e.preventDefault();
                   resizing.current = true;

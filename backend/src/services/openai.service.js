@@ -1109,8 +1109,7 @@ const EXECUTION_SYSTEM_PROMPT =
 
   "1. If another stdin value exists:\n" +
   "- Consume ONLY the next unused value.\n" +
-  "- Echo it in the terminal stream as:\n" +
-  "> value\n" +
+  "- Echo it in the terminal stream side-by-side directly after the prompt line (e.g., \"Enter your name: Alice\\n\" or \"Enter age: 25\\n\"). If no prompt text exists, output \"> value\".\n" +
   "- Continue execution.\n\n" +
 
   "2. If no stdin values remain:\n" +
