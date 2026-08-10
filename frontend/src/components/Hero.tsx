@@ -101,7 +101,7 @@ export default function Hero() {
             transition={{ duration: 0.7, delay: 0.6 }}
             className="mt-10 flex items-center gap-6 justify-center lg:justify-start font-mono text-[12px] text-[var(--ink-faint)]"
           >
-            <span>12+ languages</span>
+            <span>4 languages</span>
             <span className="h-1 w-1 rounded-full bg-[var(--ink-faint)]" />
             <span>Instant execution</span>
             <span className="h-1 w-1 rounded-full bg-[var(--ink-faint)]" />
