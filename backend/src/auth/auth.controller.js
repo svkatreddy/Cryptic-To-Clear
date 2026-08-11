@@ -145,6 +145,27 @@ exports.getMe = async (req, res) => {
 };
 
 /**
+ * @route POST /api/auth/faculty-demo
+ * @desc Authenticate as Demo Faculty Account without credentials
+ */
+exports.facultyDemo = async (req, res, next) => {
+  try {
+    const demoFaculty = await userModel.findByEmail("faculty@cryptictoclear.io");
+    if (!demoFaculty) {
+      return res.status(404).json({
+        success: false,
+        message: "Demo faculty account not configured.",
+      });
+    }
+
+    await userModel.updateLastLogin(demoFaculty.id);
+    sendTokenResponse(demoFaculty, 200, res, "Successfully logged into Demo Faculty Account!");
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @route POST /api/auth/forgot-password
  * @desc Password reset request placeholder
  */
@@ -169,6 +190,6 @@ exports.forgotPassword = async (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Password reset link has been dispatched to your email address.",
-    demoNote: "In development/demo mode, use Demo account credentials: demo@cryptictoclear.io / Password123!",
+    demoNote: "In development/demo mode, use Demo account credentials: demo@cryptictoclear.io / Password123! or faculty@cryptictoclear.io / Faculty123!",
   });
 };

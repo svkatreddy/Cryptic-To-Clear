@@ -11,16 +11,18 @@ class UserModel {
     this._seedDemoAccount();
   }
 
-  async _seedDemoAccount() {
-    const demoPassword = await bcrypt.hash("Password123!", 10);
+  _seedDemoAccount() {
+    const demoPassword = bcrypt.hashSync("Password123!", 10);
     const demoUser = {
       id: "usr_demo_001",
-      name: "Demo Developer",
+      name: "Demo Student",
       email: "demo@cryptictoclear.io",
       passwordHash: demoPassword,
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser",
       provider: "local",
-      role: "user",
+      role: "student",
+      institutionId: "inst_mit_01",
+      departmentId: "dept_cs_01",
       plan: "free",
       subscriptionStatus: "active",
       subscriptionExpiry: null,
@@ -30,6 +32,29 @@ class UserModel {
       lastLogin: new Date().toISOString(),
     };
     this.users.set(demoUser.id, demoUser);
+
+    const facultyPassword = bcrypt.hashSync("Faculty123!", 10);
+    const demoFaculty = {
+      id: "usr_faculty_demo",
+      name: "Dr. Sarah Jenkins",
+      email: "faculty@cryptictoclear.io",
+      passwordHash: facultyPassword,
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=FacultyDemo",
+      provider: "local",
+      role: "faculty",
+      institutionId: "inst_mit_01",
+      departmentId: "dept_cs_01",
+      title: "Professor of Computer Science",
+      plan: "enterprise",
+      subscriptionStatus: "active",
+      subscriptionExpiry: null,
+      credits: 10000,
+      isDemoAccount: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+    };
+    this.users.set(demoFaculty.id, demoFaculty);
   }
 
   /**
@@ -57,7 +82,7 @@ class UserModel {
     return this.users.get(id) || null;
   }
 
-  async create({ name, email, password, provider = "local", avatar = null }) {
+  async create({ name, email, password, provider = "local", avatar = null, role = "student", institutionId = "inst_mit_01", departmentId = "dept_cs_01" }) {
     const existing = await this.findByEmail(email);
     if (existing) {
       const err = new Error("User with this email already exists.");
@@ -76,11 +101,13 @@ class UserModel {
       passwordHash,
       avatar: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
       provider,
-      role: "user",
-      plan: "free",
+      role: role || "student",
+      institutionId,
+      departmentId,
+      plan: role === "faculty" ? "enterprise" : "free",
       subscriptionStatus: "active",
       subscriptionExpiry: null,
-      credits: 50,
+      credits: role === "faculty" ? 5000 : 50,
       createdAt: now,
       updatedAt: now,
       lastLogin: now,
