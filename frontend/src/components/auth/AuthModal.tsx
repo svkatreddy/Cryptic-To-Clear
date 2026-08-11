@@ -3,15 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import LoginForm from "./LoginForm";
+import FacultyLoginForm from "./FacultyLoginForm";
 import RegisterForm from "./RegisterForm";
 import ForgotPassword from "./ForgotPassword";
 import GuestButton from "./GuestButton";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Terminal } from "lucide-react";
+import { X, Terminal, User, GraduationCap } from "lucide-react";
 
 export default function AuthModal() {
   const { isAuthModalOpen, authModalTab, closeAuthModal } = useAuth();
-  const [activeTab, setActiveTab] = useState<"login" | "register" | "forgot">(authModalTab);
+  const [activeTab, setActiveTab] = useState<"login" | "faculty" | "register" | "forgot">(authModalTab);
 
   useEffect(() => {
     setActiveTab(authModalTab);
@@ -53,23 +54,55 @@ export default function AuthModal() {
           </button>
 
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-5">
             <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] mb-3 shadow-[0_0_20px_rgba(184,146,255,0.3)]">
               <Terminal className="h-5 w-5 text-[#0a0d13]" strokeWidth={2.5} />
             </div>
             <h2 className="font-display text-xl font-semibold text-[var(--ink)] tracking-tight">
-              {activeTab === "login" && "Welcome Back"}
-              {activeTab === "register" && "Create Your Account"}
+              {activeTab === "login" && "Student Login"}
+              {activeTab === "faculty" && "Faculty & Institutional Portal"}
+              {activeTab === "register" && "Create Student Account"}
               {activeTab === "forgot" && "Account Recovery"}
             </h2>
             <p className="text-xs text-[var(--ink-dim)] mt-1 font-medium">
-              Cryptic to Clear • Smart AI Compiler Platform
+              Cryptic to Clear • Multi-Role Compiler Platform
             </p>
           </div>
+
+          {/* Role Switcher Tabs */}
+          {(activeTab === "login" || activeTab === "faculty") && (
+            <div className="flex rounded-xl p-1 bg-[var(--bg)] border border-[var(--border)] mb-5 font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("login")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  activeTab === "login"
+                    ? "bg-[var(--panel)] text-[var(--ink)] font-semibold shadow-sm border border-[var(--border-strong)]"
+                    : "text-[var(--ink-dim)] hover:text-[var(--ink)]"
+                }`}
+              >
+                <User className="w-3.5 h-3.5 text-[var(--syn-function)]" />
+                <span>Student Login</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("faculty")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  activeTab === "faculty"
+                    ? "bg-[var(--panel)] text-[var(--ink)] font-semibold shadow-sm border border-[var(--border-strong)]"
+                    : "text-[var(--ink-dim)] hover:text-[var(--ink)]"
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-[var(--syn-keyword)]" />
+                <span>Faculty Login</span>
+              </button>
+            </div>
+          )}
 
           {/* Form container */}
           <div className="relative z-10">
             {activeTab === "login" && <LoginForm onSwitchTab={(tab) => setActiveTab(tab)} />}
+            {activeTab === "faculty" && <FacultyLoginForm onSwitchTab={(tab) => setActiveTab(tab)} />}
             {activeTab === "register" && <RegisterForm onSwitchTab={() => setActiveTab("login")} />}
             {activeTab === "forgot" && <ForgotPassword onSwitchTab={() => setActiveTab("login")} />}
           </div>

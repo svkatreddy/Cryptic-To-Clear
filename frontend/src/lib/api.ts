@@ -568,7 +568,11 @@ export interface User {
   email: string;
   avatar?: string;
   provider: "local" | "google" | "github";
-  role: "user" | "admin";
+  role: "student" | "faculty" | "admin" | "user";
+  institutionId?: string;
+  departmentId?: string;
+  title?: string;
+  isDemoAccount?: boolean;
   plan: "free" | "pro" | "team" | "enterprise";
   subscriptionStatus: "active" | "inactive" | "trialing" | "canceled";
   subscriptionExpiry?: string | null;
@@ -609,12 +613,35 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
   }
 }
 
-export async function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
+export async function loginFacultyDemo(): Promise<AuthResponse> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/faculty-demo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.success === false) {
+      return {
+        success: false,
+        message: data?.message || "Could not log into Demo Faculty account.",
+      };
+    }
+    return data as AuthResponse;
+  } catch {
+    return {
+      success: false,
+      message: "Could not connect to Faculty Demo authentication server.",
+    };
+  }
+}
+
+export async function registerUser(name: string, email: string, password: string, role: "student" | "faculty" = "student"): Promise<AuthResponse> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, role }),
       credentials: "include",
     });
     const data = await res.json().catch(() => null);
@@ -678,6 +705,488 @@ export async function requestForgotPassword(email: string): Promise<{ success: b
     return data || { success: true, message: "Instructions dispatched." };
   } catch {
     return { success: false, message: "Network error requesting password reset." };
+  }
+}
+
+/* ==========================================================================
+   FACULTY DASHBOARD TYPES AND APIS
+   ========================================================================== */
+
+export interface FacultyInsight {
+  id: string;
+  type: "warning" | "critical" | "info" | "trend";
+  title: string;
+  description: string;
+  actionable: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  studentName: string;
+  rollNumber: string;
+  section: string;
+  language: string;
+  status: string;
+  detail: string;
+  timestamp: string;
+}
+
+export interface InstitutionInfo {
+  id: string;
+  name: string;
+  code: string;
+  logo: string;
+}
+
+export interface FacultyOverviewData {
+  totalStudents: number;
+  activeStudents: number;
+  atRiskStudents: number;
+  programsExecuted: number;
+  compilationErrors: number;
+  aiExplanationsUsed: number;
+  averageCodingScore: number;
+  insights: FacultyInsight[];
+  recentActivity: ActivityItem[];
+  institution: InstitutionInfo;
+}
+
+export interface StudentSummary {
+  id: string;
+  userId: string;
+  name: string;
+  rollNumber: string;
+  email: string;
+  branch: string;
+  year: number;
+  section: string;
+  institutionId: string;
+  programsExecuted: number;
+  successfulExecutions: number;
+  compilerErrors: number;
+  aiExplanations: number;
+  codingScore: number;
+  lastActive: string;
+  status: "Active" | "At Risk" | "Inactive";
+  avatar?: string;
+  frequentMistakes?: string[];
+  languageStats?: Record<string, number>;
+}
+
+export interface StudentDetailData extends StudentSummary {
+  institutionName: string;
+  department: string;
+  progressTimeline: Array<{ week: string; score: number; executions: number; errors: number }>;
+  errorCategories: Array<{ category: string; count: number }>;
+  attemptedPrograms: Array<{ id: string; title: string; language: string; status: string; attempts: number; timeSpent: string; score: number }>;
+}
+
+export interface ErrorCategoryStat {
+  category: string;
+  count: number;
+  percentage: number;
+  description: string;
+}
+
+export interface LanguageWiseError {
+  language: string;
+  syntax: number;
+  compilation: number;
+  type: number;
+  runtime: number;
+  logic: number;
+  total: number;
+}
+
+export interface CommonErrorItem {
+  error: string;
+  count: number;
+  affectedStudents: number;
+  primaryLanguage: string;
+}
+
+export interface ErrorAnalyticsData {
+  totalErrors: number;
+  byCategory: ErrorCategoryStat[];
+  languageWise: LanguageWiseError[];
+  mostCommonErrors: CommonErrorItem[];
+  weeklyTrend: Array<{ day: string; syntax: number; compilation: number; runtime: number }>;
+}
+
+export interface LanguageStat {
+  language: string;
+  code: string;
+  executions: number;
+  successRate: number;
+  errorRate: number;
+  color: string;
+}
+
+export interface LanguageAnalyticsData {
+  mostUsedLanguage: string;
+  languages: LanguageStat[];
+}
+
+export interface ClassSection {
+  id: string;
+  institutionId: string;
+  facultyId: string;
+  name: string;
+  section: string;
+  year: number;
+  studentCount: number;
+}
+
+export interface SubmissionRecord {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  studentName: string;
+  rollNumber: string;
+  language: string;
+  sourceCode: string;
+  status: string;
+  score: number;
+  submittedAt: string;
+  executionTime: string;
+  compilerErrors?: string;
+  aiExplanation?: string;
+}
+
+export interface AssignmentItem {
+  id: string;
+  facultyId: string;
+  classId: string;
+  className: string;
+  title: string;
+  description: string;
+  instructions?: string;
+  assignmentType?: string;
+  languageMode: "ANY" | "RESTRICTED";
+  allowedLanguages: string[];
+  points?: number;
+  difficulty?: "easy" | "medium" | "hard";
+  startDate?: string;
+  deadline: string;
+  maxAttempts?: number;
+  totalAssigned: number;
+  submissionsCount: number;
+  avgScore: number;
+  createdAt: string;
+  submitted?: boolean;
+  latestSubmission?: SubmissionRecord;
+}
+
+export interface AssignmentAnalyticsData {
+  assignment: AssignmentItem;
+  totalSubmissions: number;
+  successRate: number;
+  avgScore: number;
+  mostUsedLanguage: string;
+  languageUsage: Record<string, number>;
+  submissions: SubmissionRecord[];
+}
+
+export interface FacultySubscriptionData {
+  institution: string;
+  plan: string;
+  status: string;
+  facultySeatsMax: number;
+  facultySeatsUsed: number;
+  studentSeatsMax: number;
+  studentSeatsUsed: number;
+  aiCreditsQuota: number;
+  aiCreditsUsed: number;
+  billingCycle: string;
+  nextRenewal: string;
+  features: string[];
+}
+
+const getAuthHeaders = (token?: string | null) => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const savedToken = token || (typeof window !== "undefined" ? localStorage.getItem("c2c_token") : null);
+  if (savedToken) {
+    headers["Authorization"] = `Bearer ${savedToken}`;
+  }
+  return headers;
+};
+
+export async function fetchFacultyOverview(token?: string | null): Promise<{ success: boolean; data?: FacultyOverviewData; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/overview`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch overview." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching faculty overview." };
+  }
+}
+
+export async function fetchFacultyStudents(
+  params: { search?: string; branch?: string; section?: string; year?: string; status?: string; sortBy?: string; sortOrder?: string; page?: number; limit?: number },
+  token?: string | null
+): Promise<{ success: boolean; data?: { students: StudentSummary[]; pagination: { total: number; page: number; limit: number; totalPages: number } }; message?: string }> {
+  try {
+    const query = new URLSearchParams();
+    if (params.search) query.set("search", params.search);
+    if (params.branch) query.set("branch", params.branch);
+    if (params.section) query.set("section", params.section);
+    if (params.year) query.set("year", params.year);
+    if (params.status) query.set("status", params.status);
+    if (params.sortBy) query.set("sortBy", params.sortBy);
+    if (params.sortOrder) query.set("sortOrder", params.sortOrder);
+    if (params.page) query.set("page", String(params.page));
+    if (params.limit) query.set("limit", String(params.limit));
+
+    const res = await fetch(`${API_BASE_URL}/api/faculty/students?${query.toString()}`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch students." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching students list." };
+  }
+}
+
+export async function fetchFacultyStudentDetail(studentId: string, token?: string | null): Promise<{ success: boolean; data?: StudentDetailData; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/students/${studentId}`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch student details." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching student performance detail." };
+  }
+}
+
+export async function fetchFacultyErrorAnalytics(token?: string | null): Promise<{ success: boolean; data?: ErrorAnalyticsData; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/error-analytics`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch error analytics." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching error analytics." };
+  }
+}
+
+export async function fetchFacultyLanguageAnalytics(token?: string | null): Promise<{ success: boolean; data?: LanguageAnalyticsData; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/language-analytics`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch language analytics." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching language analytics." };
+  }
+}
+
+export async function fetchFacultyClasses(token?: string | null): Promise<{ success: boolean; data?: { institutionId: string; institutionName: string; department: string; classes: ClassSection[] }; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/classes`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch classes." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching classes." };
+  }
+}
+
+export async function addClassSection(classData: { name: string; section: string; year: number }, token?: string | null): Promise<{ success: boolean; data?: ClassSection; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/classes`, {
+      method: "POST",
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(classData),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to create class section." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error creating class section." };
+  }
+}
+
+export async function fetchFacultyAssignments(token?: string | null): Promise<{ success: boolean; data?: AssignmentItem[]; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/assignments`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch assignments." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching assignments." };
+  }
+}
+
+export async function createFacultyAssignment(
+  assignmentData: {
+    title: string;
+    description?: string;
+    instructions?: string;
+    deadline: string;
+    classId: string;
+    languageMode: "ANY" | "RESTRICTED";
+    allowedLanguages?: string[];
+    points?: number;
+    difficulty?: "easy" | "medium" | "hard";
+    maxAttempts?: number;
+    startDate?: string;
+  },
+  token?: string | null
+): Promise<{ success: boolean; data?: AssignmentItem; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/assignments`, {
+      method: "POST",
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(assignmentData),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to create assignment." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error creating assignment." };
+  }
+}
+
+export async function updateFacultyAssignment(
+  assignmentId: string,
+  assignmentData: {
+    title?: string;
+    description?: string;
+    instructions?: string;
+    deadline?: string;
+    classId?: string;
+    languageMode?: "ANY" | "RESTRICTED";
+    allowedLanguages?: string[];
+    points?: number;
+    difficulty?: "easy" | "medium" | "hard";
+    maxAttempts?: number;
+  },
+  token?: string | null
+): Promise<{ success: boolean; data?: AssignmentItem; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/assignments/${assignmentId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(assignmentData),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to update assignment." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error updating assignment." };
+  }
+}
+
+export async function submitStudentAssignment(
+  assignmentId: string,
+  submissionData: {
+    language: string;
+    sourceCode: string;
+    status?: string;
+    score?: number;
+    executionTime?: string;
+    compilerErrors?: string;
+    aiExplanation?: string;
+  },
+  token?: string | null
+): Promise<{ success: boolean; data?: SubmissionRecord; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/assignments/${assignmentId}/submit`, {
+      method: "POST",
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(submissionData),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Submission rejected." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error submitting assignment." };
+  }
+}
+
+export async function fetchAssignmentAnalytics(
+  assignmentId: string,
+  token?: string | null
+): Promise<{ success: boolean; data?: AssignmentAnalyticsData; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/assignments/${assignmentId}/analytics`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch assignment analytics." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching assignment analytics." };
+  }
+}
+
+export async function fetchStudentAssignments(
+  token?: string | null
+): Promise<{ success: boolean; data?: AssignmentItem[]; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/student-assignments`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch student assignments." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching student assignments." };
+  }
+}
+
+export async function fetchFacultyReports(token?: string | null): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/reports`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch reports." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching reports." };
+  }
+}
+
+export async function fetchFacultySubscription(token?: string | null): Promise<{ success: boolean; data?: FacultySubscriptionData; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/faculty/subscription`, {
+      headers: getAuthHeaders(token),
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) return { success: false, message: json?.message || "Failed to fetch subscription architecture info." };
+    return json;
+  } catch {
+    return { success: false, message: "Network error fetching subscription info." };
   }
 }
 

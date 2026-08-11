@@ -58,10 +58,11 @@ export default function ForgotPassword({ onSwitchTab }: ForgotPasswordProps) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Email Address</label>
+          <label htmlFor="forgot-email" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Email Address</label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)]" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
             <input
+              id="forgot-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

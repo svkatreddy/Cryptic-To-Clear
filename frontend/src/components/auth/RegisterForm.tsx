@@ -53,10 +53,11 @@ export default function RegisterForm({ onSwitchTab }: RegisterFormProps) {
       )}
 
       <div>
-        <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Full Name</label>
+        <label htmlFor="register-name" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Full Name</label>
         <div className="relative">
-          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)]" />
+          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
           <input
+            id="register-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -67,10 +68,11 @@ export default function RegisterForm({ onSwitchTab }: RegisterFormProps) {
       </div>
 
       <div>
-        <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Email Address</label>
+        <label htmlFor="register-email" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Email Address</label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)]" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
           <input
+            id="register-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -82,10 +84,11 @@ export default function RegisterForm({ onSwitchTab }: RegisterFormProps) {
       </div>
 
       <div>
-        <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Password</label>
+        <label htmlFor="register-password" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">Password</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)]" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
           <input
+            id="register-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

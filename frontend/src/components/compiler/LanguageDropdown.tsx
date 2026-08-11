@@ -9,10 +9,12 @@ import { LANGUAGES, LanguageConfig } from "@/lib/languages";
 export default function LanguageDropdown({
   value,
   onChange,
+  allowedLanguages,
 }: {
   value: string;
   onChange: (id: LanguageConfig["id"]) => void;
   onlySupported?: boolean;
+  allowedLanguages?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -24,7 +26,12 @@ export default function LanguageDropdown({
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const current = LANGUAGES.find((l) => l.id === value) ?? LANGUAGES[0];
+
+  const filteredLanguages = allowedLanguages && allowedLanguages.length > 0
+    ? LANGUAGES.filter((l) => allowedLanguages.map((a) => a.toLowerCase()).includes(l.id.toLowerCase()))
+    : LANGUAGES;
+
+  const current = filteredLanguages.find((l) => l.id === value) ?? filteredLanguages[0] ?? LANGUAGES[0];
 
   useEffect(() => {
     setMounted(true);
@@ -113,7 +120,7 @@ export default function LanguageDropdown({
                   zIndex: 999999,
                 }}
               >
-                {LANGUAGES.map((lang) => (
+                {filteredLanguages.map((lang) => (
                   <button
                     key={lang.id}
                     type="button"

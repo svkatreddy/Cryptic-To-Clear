@@ -20,7 +20,11 @@ import {
   ExecutionTrace,
   learnCode,
   LearningContent,
+  fetchStudentAssignments,
+  submitStudentAssignment,
+  AssignmentItem,
 } from "@/lib/api";
+import StudentAssignmentsModal from "@/components/compiler/StudentAssignmentsModal";
 import { changedLineNumbers } from "@/lib/diff";
 import {
   downloadTextFile,
@@ -205,6 +209,17 @@ export default function CompilerPage() {
   const [fullscreen, setFullscreen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
+  // Student Assignment State
+  const [studentAssignments, setStudentAssignments] = useState<AssignmentItem[]>([]);
+  const [activeAssignment, setActiveAssignment] = useState<AssignmentItem | null>(null);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [isSubmittingAssignment, setIsSubmittingAssignment] = useState(false);
+  const [submissionResultModal, setSubmissionResultModal] = useState<{
+    success: boolean;
+    message: string;
+    score?: number;
+  } | null>(null);
+
   const showExportNote = (message: string) => {
     setExportNote(message);
     setTimeout(() => setExportNote(""), 2000);
@@ -213,6 +228,71 @@ export default function CompilerPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const resizing = useRef(false);
   const aiResizing = useRef(false);
+
+  // Fetch course assignments on mount
+  useEffect(() => {
+    fetchStudentAssignments().then((res) => {
+      if (res.success && res.data) {
+        setStudentAssignments(res.data);
+      }
+    });
+  }, []);
+
+  const handleSelectAssignment = useCallback((asg: AssignmentItem | null) => {
+    setActiveAssignment(asg);
+    if (asg && asg.languageMode === "RESTRICTED" && asg.allowedLanguages && asg.allowedLanguages.length > 0) {
+      const allowedNorm = asg.allowedLanguages.map((l) => l.toLowerCase());
+      if (!allowedNorm.includes(language.toLowerCase())) {
+        setLanguage(allowedNorm[0]);
+      }
+    }
+  }, [language]);
+
+  const handleAssignmentSubmit = useCallback(async () => {
+    if (!activeAssignment) return;
+    setIsSubmittingAssignment(true);
+
+    const code = codeMap[language] || "";
+    // Execute code to get results
+    const execRes = await executeCode({
+      language,
+      sourceCode: code,
+      stdin: input,
+    });
+
+    const isSuccess = execRes.success && !execRes.compileError && execRes.statusId === 3;
+    const compileErr = execRes.success ? execRes.compileError : execRes.message;
+    const execTime = execRes.success ? formatTime(execRes.time) : "0 ms";
+    const subStatus = isSuccess ? "Success" : (execRes.success && execRes.compileError) ? "Compile Error" : "Execution Error";
+    const subScore = isSuccess ? 100 : (execRes.success && execRes.compileError) ? 50 : 60;
+
+    const res = await submitStudentAssignment(activeAssignment.id, {
+      language,
+      sourceCode: code,
+      status: subStatus,
+      score: subScore,
+      executionTime: execTime,
+      compilerErrors: compileErr || "",
+      aiExplanation: "",
+    });
+
+    if (res.success) {
+      setSubmissionResultModal({
+        success: true,
+        message: `Assignment "${activeAssignment.title}" submitted successfully using ${language.toUpperCase()}!`,
+        score: res.data?.score || subScore,
+      });
+      // Refresh assignments
+      fetchStudentAssignments().then((r) => r.success && r.data && setStudentAssignments(r.data));
+    } else {
+      // Backend Validation Rejection message (Requirement 6)
+      setSubmissionResultModal({
+        success: false,
+        message: res.message || "Assignment submission rejected.",
+      });
+    }
+    setIsSubmittingAssignment(false);
+  }, [activeAssignment, language, codeMap, input]);
 
   // Load persisted editor state on mount (one-time hydration from
   // localStorage, which only exists client-side, so an effect is correct here)
@@ -422,20 +502,20 @@ export default function CompilerPage() {
           msg.id === loadingId
             ? result.success
               ? ({
-                  id: loadingId,
-                  role: "assistant",
-                  kind: "text",
-                  timestamp: Date.now(),
-                  content: result.reply,
-                } as ChatMessage)
+                id: loadingId,
+                role: "assistant",
+                kind: "text",
+                timestamp: Date.now(),
+                content: result.reply,
+              } as ChatMessage)
               : ({
-                  id: loadingId,
-                  role: "assistant",
-                  kind: "error",
-                  timestamp: Date.now(),
-                  message: result.message,
-                  retry: { type: "chat", text: trimmed },
-                } as ChatMessage)
+                id: loadingId,
+                role: "assistant",
+                kind: "error",
+                timestamp: Date.now(),
+                message: result.message,
+                retry: { type: "chat", text: trimmed },
+              } as ChatMessage)
             : msg
         )
       );
@@ -477,26 +557,26 @@ export default function CompilerPage() {
           msg.id === loadingId
             ? result.success
               ? ({
-                  id: loadingId,
-                  role: "assistant",
-                  kind: "explanation",
-                  timestamp: Date.now(),
-                  explanation: result.explanation,
-                  sourceLanguage: forLanguage,
-                } as ChatMessage)
+                id: loadingId,
+                role: "assistant",
+                kind: "explanation",
+                timestamp: Date.now(),
+                explanation: result.explanation,
+                sourceLanguage: forLanguage,
+              } as ChatMessage)
               : ({
-                  id: loadingId,
-                  role: "assistant",
-                  kind: "error",
-                  timestamp: Date.now(),
-                  message: result.message,
-                  retry: {
-                    type: "explain",
-                    compilerError,
-                    language: forLanguage,
-                    sourceCode: forSourceCode,
-                  },
-                } as ChatMessage)
+                id: loadingId,
+                role: "assistant",
+                kind: "error",
+                timestamp: Date.now(),
+                message: result.message,
+                retry: {
+                  type: "explain",
+                  compilerError,
+                  language: forLanguage,
+                  sourceCode: forSourceCode,
+                },
+              } as ChatMessage)
             : msg
         )
       );
@@ -511,12 +591,12 @@ export default function CompilerPage() {
       m.map((x) =>
         x.id === msg.id
           ? ({
-              id: msg.id,
-              role: "assistant",
-              kind: "loading",
-              timestamp: Date.now(),
-              label: msg.retry.type === "chat" ? "Thinking…" : "Analyzing your error…",
-            } as ChatMessage)
+            id: msg.id,
+            role: "assistant",
+            kind: "loading",
+            timestamp: Date.now(),
+            label: msg.retry.type === "chat" ? "Thinking…" : "Analyzing your error…",
+          } as ChatMessage)
           : x
       )
     );
@@ -542,13 +622,13 @@ export default function CompilerPage() {
             x.id === msg.id
               ? result.success
                 ? ({
-                    id: msg.id,
-                    role: "assistant",
-                    kind: "explanation",
-                    timestamp: Date.now(),
-                    explanation: result.explanation,
-                    sourceLanguage: retryLang,
-                  } as ChatMessage)
+                  id: msg.id,
+                  role: "assistant",
+                  kind: "explanation",
+                  timestamp: Date.now(),
+                  explanation: result.explanation,
+                  sourceLanguage: retryLang,
+                } as ChatMessage)
                 : ({ id: msg.id, role: "assistant", kind: "error", timestamp: Date.now(), message: result.message, retry: msg.retry } as ChatMessage)
               : x
           )
@@ -724,8 +804,8 @@ export default function CompilerPage() {
     const errorText = result.compileError
       ? `Compilation Error:\n${result.compileError}`
       : result.runtimeError
-      ? `Runtime Error:\n${result.runtimeError}`
-      : "";
+        ? `Runtime Error:\n${result.runtimeError}`
+        : "";
 
     setOutput(interleaveInputWithOutput(result.output || "", initialStdin));
     setErrors(errorText);
@@ -788,8 +868,8 @@ export default function CompilerPage() {
       const errorText = result.compileError
         ? `Compilation Error:\n${result.compileError}`
         : result.runtimeError
-        ? `Runtime Error:\n${result.runtimeError}`
-        : "";
+          ? `Runtime Error:\n${result.runtimeError}`
+          : "";
 
       setOutput(interleaveInputWithOutput(result.output || "", nextSessionInput));
       setErrors(errorText);
@@ -1056,7 +1136,10 @@ export default function CompilerPage() {
 
   return (
     <main className="min-h-screen bg-[var(--bg)]">
-      <Navbar />
+      <Navbar
+        activeAssignment={activeAssignment}
+        onOpenAssignmentSelector={() => setShowAssignmentModal(true)}
+      />
 
       <div
         ref={containerRef}
@@ -1066,6 +1149,10 @@ export default function CompilerPage() {
         <Toolbar
           language={language}
           onLanguageChange={handleLanguageChange}
+          allowedLanguages={activeAssignment?.languageMode === "RESTRICTED" ? activeAssignment.allowedLanguages : undefined}
+          activeAssignment={activeAssignment}
+          onSubmitAssignment={handleAssignmentSubmit}
+          isSubmittingAssignment={isSubmittingAssignment}
           onRun={handleRun}
           onCompile={handleCompile}
           onClear={handleClear}
@@ -1101,6 +1188,42 @@ export default function CompilerPage() {
           onShowShortcuts={() => setShortcutsOpen(true)}
         />
 
+        {/* Active Assignment Header (Requirement 4) */}
+        {activeAssignment && (
+          <div className="px-4 py-2 bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-purple-900/30 border-b border-purple-500/20 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+            <div className="flex items-center gap-3">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                Assignment Mode
+              </span>
+              <h3 className="font-bold text-[var(--ink)]">{activeAssignment.title}</h3>
+              <span className="text-[var(--ink-dim)]">|</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[var(--ink-dim)]">Allowed Languages:</span>
+                <strong className={activeAssignment.languageMode === "RESTRICTED" ? "text-amber-300" : "text-emerald-300"}>
+                  {activeAssignment.languageMode === "RESTRICTED" && activeAssignment.allowedLanguages.length > 0
+                    ? activeAssignment.allowedLanguages.map((l) => (l === "cpp" ? "C++" : l.toUpperCase())).join(", ")
+                    : "Any Supported Language"}
+                </strong>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAssignmentModal(true)}
+                className="text-[11px] text-[var(--syn-keyword)] hover:underline cursor-pointer"
+              >
+                Change Assignment
+              </button>
+              <button
+                onClick={() => setActiveAssignment(null)}
+                className="text-[11px] text-rose-400 hover:underline cursor-pointer"
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-1 min-h-0">
           {/* Editor + bottom panel */}
           <div className="flex flex-col flex-1 min-w-0">
@@ -1113,9 +1236,9 @@ export default function CompilerPage() {
                 highlightLines={highlightLines}
                 currentLine={
                   debuggerOpen &&
-                  debugStatus === "success" &&
-                  trace &&
-                  debugLanguage === language
+                    debugStatus === "success" &&
+                    trace &&
+                    debugLanguage === language
                     ? trace.steps[debugStepIndex]?.line ?? null
                     : null
                 }
@@ -1293,6 +1416,42 @@ export default function CompilerPage() {
       />
 
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      {/* Student Assignment Selector Modal */}
+      {showAssignmentModal && (
+        <StudentAssignmentsModal
+          assignments={studentAssignments}
+          activeAssignment={activeAssignment}
+          onSelectAssignment={handleSelectAssignment}
+          onClose={() => setShowAssignmentModal(false)}
+        />
+      )}
+
+      {/* Submission Result Modal */}
+      {submissionResultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="glass-strong border border-[var(--border-strong)] rounded-2xl p-6 max-w-md w-full space-y-4 relative editor-grid">
+            <h3 className={`text-lg font-display font-bold ${submissionResultModal.success ? "text-emerald-400" : "text-rose-400"}`}>
+              {submissionResultModal.success ? "Assignment Submitted!" : "Submission Rejected"}
+            </h3>
+
+            <p className="text-xs font-mono text-[var(--ink-dim)] leading-relaxed">{submissionResultModal.message}</p>
+
+            {submissionResultModal.score !== undefined && submissionResultModal.success && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-300">
+                Score Awarded: <strong>{submissionResultModal.score}%</strong>
+              </div>
+            )}
+
+            <button
+              onClick={() => setSubmissionResultModal(null)}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[var(--syn-keyword)] to-[var(--syn-function)] text-[#0a0d13] font-bold text-xs font-mono cursor-pointer"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

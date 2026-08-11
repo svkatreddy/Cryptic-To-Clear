@@ -14,6 +14,7 @@ import {
   GraduationCap,
   ArrowLeftRight,
   Keyboard,
+  Send,
 } from "lucide-react";
 import LanguageDropdown from "./LanguageDropdown";
 import SettingsPanel from "./SettingsPanel";
@@ -24,6 +25,10 @@ import { LanguageConfig } from "@/lib/languages";
 interface ToolbarProps {
   language: string;
   onLanguageChange: (id: LanguageConfig["id"]) => void;
+  allowedLanguages?: string[];
+  activeAssignment?: { id: string } | null;
+  onSubmitAssignment?: () => void;
+  isSubmittingAssignment?: boolean;
   onRun: () => void;
   onCompile: () => void;
   onClear: () => void;
@@ -62,6 +67,10 @@ interface ToolbarProps {
 export default function Toolbar({
   language,
   onLanguageChange,
+  allowedLanguages,
+  activeAssignment,
+  onSubmitAssignment,
+  isSubmittingAssignment,
   onRun,
   onCompile,
   onClear,
@@ -98,14 +107,19 @@ export default function Toolbar({
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 glass-strong border-b border-[var(--border)] overflow-x-auto">
-      <LanguageDropdown value={language} onChange={onLanguageChange} onlySupported />
+      <LanguageDropdown
+        value={language}
+        onChange={onLanguageChange}
+        onlySupported
+        allowedLanguages={allowedLanguages}
+      />
 
       <div className="w-px h-6 bg-[var(--border)] mx-1 shrink-0" />
 
       <button
         onClick={onRun}
         disabled={isRunning}
-        className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium text-[#0a0d13] bg-gradient-to-r from-[var(--syn-string)] to-[var(--syn-function)] hover:brightness-110 transition-all disabled:opacity-60 shrink-0"
+        className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium text-[#0a0d13] bg-gradient-to-r from-[var(--syn-string)] to-[var(--syn-function)] hover:brightness-110 transition-all disabled:opacity-60 shrink-0 cursor-pointer"
       >
         {isRunning ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -115,10 +129,27 @@ export default function Toolbar({
         Run
       </button>
 
+      {/* Submit Assignment CTA (Requirement 5) */}
+      {activeAssignment && onSubmitAssignment && (
+        <button
+          onClick={onSubmitAssignment}
+          disabled={isSubmittingAssignment || isRunning}
+          title="Submit solution for this assignment"
+          className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-bold text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all disabled:opacity-60 shrink-0 cursor-pointer shadow-[0_0_15px_rgba(184,146,255,0.3)]"
+        >
+          {isSubmittingAssignment ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Send className="h-3.5 w-3.5" />
+          )}
+          Submit Assignment
+        </button>
+      )}
+
       <button
         onClick={onCompile}
         disabled={isCompiling}
-        className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium glass hover:border-[var(--border-strong)] transition-colors disabled:opacity-60 shrink-0"
+        className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium glass hover:border-[var(--border-strong)] transition-colors disabled:opacity-60 shrink-0 cursor-pointer"
       >
         {isCompiling ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--syn-keyword)]" />

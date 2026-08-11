@@ -1,9 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, loginUser, registerUser, logoutUser, fetchMe, requestForgotPassword } from "@/lib/api";
+import { User, loginUser, loginFacultyDemo, registerUser, logoutUser, fetchMe, requestForgotPassword } from "@/lib/api";
 
-type AuthTab = "login" | "register" | "forgot";
+type AuthTab = "login" | "register" | "forgot" | "faculty";
 
 interface AuthContextType {
   user: User | null;
@@ -15,7 +15,8 @@ interface AuthContextType {
   openAuthModal: (tab?: AuthTab) => void;
   closeAuthModal: () => void;
   login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
-  register: (name: string, email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  loginAsFacultyDemo: () => Promise<{ success: boolean; message?: string }>;
+  register: (name: string, email: string, pass: string, role?: "student" | "faculty") => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   continueAsGuest: () => void;
   forgotPassword: (email: string) => Promise<{ success: boolean; message: string; demoNote?: string }>;
@@ -83,8 +84,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, message: res.message || "Invalid credentials." };
   };
 
-  const register = async (name: string, email: string, pass: string) => {
-    const res = await registerUser(name, email, pass);
+  const loginAsFacultyDemo = async () => {
+    const res = await loginFacultyDemo();
+    if (res.success && res.user) {
+      setUser(res.user);
+      setIsGuest(false);
+      localStorage.setItem("c2c_guest", "false");
+      if (res.token) {
+        setToken(res.token);
+        localStorage.setItem("c2c_token", res.token);
+      }
+      setIsAuthModalOpen(false);
+      return { success: true, message: res.message };
+    }
+    return { success: false, message: res.message || "Failed to sign into faculty demo." };
+  };
+
+  const register = async (name: string, email: string, pass: string, role: "student" | "faculty" = "student") => {
+    const res = await registerUser(name, email, pass, role);
     if (res.success && res.user) {
       setUser(res.user);
       setIsGuest(false);
@@ -134,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         openAuthModal,
         closeAuthModal,
         login,
+        loginAsFacultyDemo,
         register,
         logout,
         continueAsGuest,

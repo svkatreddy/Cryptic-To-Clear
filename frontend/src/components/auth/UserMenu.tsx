@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { User as UserIcon, LogOut, LayoutDashboard, Sparkles, ChevronDown } from "lucide-react";
+import { User as UserIcon, LogOut, LayoutDashboard, Sparkles, ChevronDown, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 export default function UserMenu() {
@@ -22,15 +22,17 @@ export default function UserMenu() {
 
   if (!user) return null;
 
-  const planUpper = (user.plan || "free").toUpperCase();
-  const planColor =
-    user.plan === "pro"
-      ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-      : user.plan === "team"
-      ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-      : user.plan === "enterprise"
-      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+  const isFaculty = user.role === "faculty" || user.role === "admin" || user.isDemoAccount;
+  const roleDisplay = isFaculty ? "FACULTY" : (user.plan || "free").toUpperCase();
+  const planColor = isFaculty
+    ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+    : user.plan === "pro"
+    ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+    : user.plan === "team"
+    ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+    : user.plan === "enterprise"
+    ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
 
   return (
     <div className="relative" ref={menuRef}>
@@ -47,7 +49,7 @@ export default function UserMenu() {
           </div>
         )}
         <span className="text-xs font-mono font-medium text-[var(--ink)] max-w-[100px] truncate">{user.name}</span>
-        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${planColor}`}>{planUpper}</span>
+        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${planColor}`}>{roleDisplay}</span>
         <ChevronDown className="w-3.5 h-3.5 text-[var(--ink-faint)]" />
       </button>
 
@@ -67,6 +69,17 @@ export default function UserMenu() {
               <LayoutDashboard className="w-4 h-4 text-[var(--syn-keyword)]" />
               <span>Compiler Workspace</span>
             </Link>
+
+            {isFaculty && (
+              <Link
+                href="/faculty"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-mono text-[var(--syn-keyword)] hover:bg-purple-500/10 rounded-lg transition-colors font-bold"
+              >
+                <GraduationCap className="w-4 h-4 text-[var(--syn-keyword)]" />
+                <span>Faculty Dashboard</span>
+              </Link>
+            )}
 
             <div className="flex items-center justify-between px-3 py-2 text-xs font-mono text-[var(--ink-dim)] hover:bg-[var(--border)] rounded-lg">
               <div className="flex items-center gap-2">

@@ -85,10 +85,11 @@ export default function ContactPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
+                    <label htmlFor="contact-name" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
                       Your Name *
                     </label>
                     <input
+                      id="contact-name"
                       type="text"
                       placeholder="Alex Dev"
                       value={formData.name}
@@ -98,10 +99,11 @@ export default function ContactPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
+                    <label htmlFor="contact-email" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
                       Email Address *
                     </label>
                     <input
+                      id="contact-email"
                       type="email"
                       placeholder="alex@example.com"
                       value={formData.email}
@@ -112,10 +114,11 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
+                  <label htmlFor="contact-subject" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
                     Topic / Subject
                   </label>
                   <select
+                    id="contact-subject"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--syn-function)] transition-colors"
@@ -128,10 +131,11 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
+                  <label htmlFor="contact-message" className="block text-xs font-mono text-[var(--ink-dim)] mb-1.5">
                     Message *
                   </label>
                   <textarea
+                    id="contact-message"
                     rows={5}
                     placeholder="Tell us how we can help or how to improve Cryptic to Clear..."
                     value={formData.message}
@@ -143,7 +147,7 @@ export default function ContactPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl py-3 px-6 text-sm font-semibold text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl py-3 px-6 text-sm font-semibold text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
                     <span>Sending...</span>

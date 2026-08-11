@@ -1,0 +1,119 @@
+"use client";
+
+import React from "react";
+import { AssignmentItem } from "@/lib/api";
+import { X, BookOpen, Calendar, Code2, CheckCircle2, ChevronRight, AlertCircle } from "lucide-react";
+
+interface StudentAssignmentsModalProps {
+  assignments: AssignmentItem[];
+  activeAssignment: AssignmentItem | null;
+  onSelectAssignment: (asg: AssignmentItem | null) => void;
+  onClose: () => void;
+}
+
+export default function StudentAssignmentsModal({
+  assignments,
+  activeAssignment,
+  onSelectAssignment,
+  onClose,
+}: StudentAssignmentsModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="glass-strong border border-[var(--border-strong)] rounded-2xl p-6 sm:p-8 max-w-xl w-full space-y-5 relative editor-grid max-h-[85vh] overflow-y-auto">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 text-[var(--ink-dim)] hover:text-[var(--ink)] cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[var(--syn-keyword)]" />
+            <h2 className="text-lg font-display font-bold text-[var(--ink)]">Course Assignments</h2>
+          </div>
+          <p className="text-xs font-mono text-[var(--ink-dim)]">
+            Select an assignment to load problem specifications and submit code solution
+          </p>
+        </div>
+
+        {/* Clear Active Assignment Button */}
+        {activeAssignment && (
+          <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between font-mono text-xs text-purple-300">
+            <span>Active: <strong>{activeAssignment.title}</strong></span>
+            <button
+              onClick={() => onSelectAssignment(null)}
+              className="px-2.5 py-1 rounded bg-white/10 text-white hover:bg-white/20 font-sans cursor-pointer text-[11px]"
+            >
+              Exit Assignment Mode
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-3 font-mono text-xs">
+          {assignments.length === 0 ? (
+            <p className="text-xs text-[var(--ink-dim)] italic py-6 text-center">No assignments currently published.</p>
+          ) : (
+            assignments.map((asg) => {
+              const isSelected = activeAssignment?.id === asg.id;
+              const isRestricted = asg.languageMode === "RESTRICTED";
+              const allowedText = isRestricted && asg.allowedLanguages && asg.allowedLanguages.length > 0
+                ? asg.allowedLanguages.map((l) => (l === "cpp" ? "C++" : l.toUpperCase())).join(", ")
+                : "Any Supported Language";
+
+              return (
+                <div
+                  key={asg.id}
+                  onClick={() => {
+                    onSelectAssignment(asg);
+                    onClose();
+                  }}
+                  className={`p-4 rounded-xl border transition-all cursor-pointer space-y-2 ${
+                    isSelected
+                      ? "bg-purple-500/10 border-purple-500/40 text-[var(--ink)] shadow-[0_0_15px_rgba(184,146,255,0.15)]"
+                      : "glass border-white/10 hover:border-[var(--syn-keyword)]/40 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                        {asg.className}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          isRestricted
+                            ? "bg-amber-500/10 text-amber-300 border border-amber-500/20"
+                            : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                        }`}
+                      >
+                        Allowed: {allowedText}
+                      </span>
+                    </div>
+
+                    <ChevronRight className="w-4 h-4 text-[var(--ink-dim)] shrink-0" />
+                  </div>
+
+                  <h3 className="font-display font-semibold text-sm text-[var(--ink)]">{asg.title}</h3>
+                  <p className="text-[11px] text-[var(--ink-dim)] line-clamp-2 font-sans">{asg.description}</p>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-[10px] text-[var(--ink-dim)]">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-[var(--syn-keyword)]" />
+                      <span>Due: {new Date(asg.deadline).toLocaleDateString()}</span>
+                    </div>
+                    {asg.submitted && (
+                      <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Submitted</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

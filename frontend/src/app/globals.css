@@ -183,6 +183,132 @@ body {
   color: #fff;
 }
 
+/* ─── Global Form Interaction Styles ─── */
+
+/* All text inputs, selects, textareas: consistent focus ring, hover, transition */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="url"],
+input[type="tel"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+textarea,
+select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.15s ease;
+  min-height: 40px; /* touch-friendly minimum */
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+input[type="search"]:hover,
+input[type="url"]:hover,
+input[type="tel"]:hover,
+input[type="date"]:hover,
+input[type="datetime-local"]:hover,
+input[type="time"]:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--ink-faint);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--syn-keyword);
+  box-shadow: 0 0 0 2px rgba(184, 146, 255, 0.15);
+}
+
+:root.light input:focus-visible,
+:root.light textarea:focus-visible,
+:root.light select:focus-visible {
+  box-shadow: 0 0 0 2px rgba(130, 80, 223, 0.12);
+}
+
+/* Selects: always pointer cursor + custom arrow sizing */
+select {
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238993a4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px !important;
+}
+
+/* Date/time inputs: full click area opens picker */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin: 0;
+  opacity: 0.6;
+  filter: invert(0.7);
+  transition: opacity 0.2s ease;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+:root.light input[type="date"]::-webkit-calendar-picker-indicator,
+:root.light input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+:root.light input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 0.5;
+}
+:root.light input[type="date"]::-webkit-calendar-picker-indicator:hover,
+:root.light input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+:root.light input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
+}
+
+/* Labels: pointer cursor when paired with interactive controls */
+label {
+  cursor: pointer;
+}
+
+/* Buttons: consistent interactive states */
+button {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--syn-keyword);
+  outline-offset: 2px;
+}
+
+/* Disabled inputs */
+input:disabled,
+textarea:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* Custom scrollbar to match theme */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
