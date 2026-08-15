@@ -25,6 +25,7 @@ import {
   AssignmentItem,
 } from "@/lib/api";
 import StudentAssignmentsModal from "@/components/compiler/StudentAssignmentsModal";
+import { useAuth } from "@/context/AuthContext";
 import { changedLineNumbers } from "@/lib/diff";
 import {
   downloadTextFile,
@@ -139,6 +140,9 @@ function formatMemory(memoryKb: number | null): string {
 }
 
 export default function CompilerPage() {
+  const { user } = useAuth();
+  const isFaculty = user?.role === "faculty" || user?.role === "admin" || user?.isDemoAccount;
+
   const [language, setLanguage] = useState<string>("c");
   const [codeMap, setCodeMap] = useState<Record<string, string>>(
     defaultCodeMap()
@@ -229,14 +233,15 @@ export default function CompilerPage() {
   const resizing = useRef(false);
   const aiResizing = useRef(false);
 
-  // Fetch course assignments on mount
+  // Fetch course assignments on mount (for non-faculty students)
   useEffect(() => {
+    if (isFaculty) return;
     fetchStudentAssignments().then((res) => {
       if (res.success && res.data) {
         setStudentAssignments(res.data);
       }
     });
-  }, []);
+  }, [isFaculty]);
 
   const handleSelectAssignment = useCallback((asg: AssignmentItem | null) => {
     setActiveAssignment(asg);
@@ -1137,8 +1142,8 @@ export default function CompilerPage() {
   return (
     <main className="min-h-screen bg-[var(--bg)]">
       <Navbar
-        activeAssignment={activeAssignment}
-        onOpenAssignmentSelector={() => setShowAssignmentModal(true)}
+        activeAssignment={isFaculty ? null : activeAssignment}
+        onOpenAssignmentSelector={isFaculty ? undefined : () => setShowAssignmentModal(true)}
       />
 
       <div
@@ -1149,9 +1154,9 @@ export default function CompilerPage() {
         <Toolbar
           language={language}
           onLanguageChange={handleLanguageChange}
-          allowedLanguages={activeAssignment?.languageMode === "RESTRICTED" ? activeAssignment.allowedLanguages : undefined}
-          activeAssignment={activeAssignment}
-          onSubmitAssignment={handleAssignmentSubmit}
+          allowedLanguages={!isFaculty && activeAssignment?.languageMode === "RESTRICTED" ? activeAssignment.allowedLanguages : undefined}
+          activeAssignment={isFaculty ? null : activeAssignment}
+          onSubmitAssignment={isFaculty ? undefined : handleAssignmentSubmit}
           isSubmittingAssignment={isSubmittingAssignment}
           onRun={handleRun}
           onCompile={handleCompile}
@@ -1188,8 +1193,8 @@ export default function CompilerPage() {
           onShowShortcuts={() => setShortcutsOpen(true)}
         />
 
-        {/* Active Assignment Header (Requirement 4) */}
-        {activeAssignment && (
+        {/* Active Assignment Header (Requirement 4 - Students only) */}
+        {!isFaculty && activeAssignment && (
           <div className="px-4 py-2 bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-purple-900/30 border-b border-purple-500/20 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
             <div className="flex items-center gap-3">
               <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
@@ -1418,7 +1423,7 @@ export default function CompilerPage() {
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {/* Student Assignment Selector Modal */}
-      {showAssignmentModal && (
+      {!isFaculty && showAssignmentModal && (
         <StudentAssignmentsModal
           assignments={studentAssignments}
           activeAssignment={activeAssignment}

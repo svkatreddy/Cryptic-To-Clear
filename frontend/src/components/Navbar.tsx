@@ -30,6 +30,8 @@ export default function Navbar({ activeAssignment, onOpenAssignmentSelector }: N
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
+  const isFaculty = user?.role === "faculty" || user?.role === "admin" || user?.isDemoAccount;
+
   useEffect(() => {
     router.prefetch("/compiler");
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -72,8 +74,8 @@ export default function Navbar({ activeAssignment, onOpenAssignmentSelector }: N
 
         {/* CTA & User Menu */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Assignments button — only shown on compiler page */}
-          {onOpenAssignmentSelector && (
+          {/* Assignments button — only shown on compiler page for non-faculty users */}
+          {!isFaculty && onOpenAssignmentSelector && (
             <button
               onClick={onOpenAssignmentSelector}
               title="Open Course Assignments"
@@ -146,8 +148,8 @@ export default function Navbar({ activeAssignment, onOpenAssignmentSelector }: N
                 </li>
               ))}
 
-              {/* Assignments button — mobile, only on compiler page */}
-              {onOpenAssignmentSelector && (
+              {/* Assignments button — mobile, only on compiler page for non-faculty users */}
+              {!isFaculty && onOpenAssignmentSelector && (
                 <li>
                   <button
                     onClick={() => {
