@@ -119,12 +119,12 @@ export default function Toolbar({
       <button
         onClick={onRun}
         disabled={isRunning}
-        className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium text-[#0a0d13] bg-gradient-to-r from-[var(--syn-string)] to-[var(--syn-function)] hover:brightness-110 transition-all disabled:opacity-60 shrink-0 cursor-pointer"
+        className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-bold text-[#07090e] bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:brightness-110 shadow-[0_0_20px_rgba(52,211,153,0.35)] hover:shadow-[0_0_28px_rgba(52,211,153,0.55)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shrink-0 cursor-pointer"
       >
         {isRunning ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
-          <Play className="h-3.5 w-3.5" />
+          <Play className="h-3.5 w-3.5 fill-[#07090e]" />
         )}
         Run
       </button>
@@ -135,7 +135,7 @@ export default function Toolbar({
           onClick={onSubmitAssignment}
           disabled={isSubmittingAssignment || isRunning}
           title="Submit solution for this assignment"
-          className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-bold text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all disabled:opacity-60 shrink-0 cursor-pointer shadow-[0_0_15px_rgba(184,146,255,0.3)]"
+          className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-bold text-[#07090e] bg-gradient-to-r from-purple-400 via-indigo-400 to-cyan-400 hover:brightness-110 shadow-[0_0_20px_rgba(192,132,252,0.4)] hover:shadow-[0_0_30px_rgba(192,132,252,0.6)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shrink-0 cursor-pointer"
         >
           {isSubmittingAssignment ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -149,12 +149,12 @@ export default function Toolbar({
       <button
         onClick={onCompile}
         disabled={isCompiling}
-        className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium glass hover:border-[var(--border-strong)] transition-colors disabled:opacity-60 shrink-0 cursor-pointer"
+        className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-semibold text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-400/60 shadow-[0_0_15px_rgba(168,85,247,0.15)] hover:shadow-[0_0_22px_rgba(168,85,247,0.35)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shrink-0 cursor-pointer"
       >
         {isCompiling ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--syn-keyword)]" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-300" />
         ) : (
-          <Hammer className="h-3.5 w-3.5 text-[var(--syn-keyword)]" />
+          <Hammer className="h-3.5 w-3.5 text-purple-300" />
         )}
         Compile
       </button>
@@ -168,7 +168,7 @@ export default function Toolbar({
       <label
         title="Upload file"
         aria-label="Upload file"
-        className="h-9 w-9 flex items-center justify-center rounded-lg glass hover:border-[var(--border-strong)] transition-colors text-[var(--ink-dim)] cursor-pointer shrink-0"
+        className="h-9 w-9 flex items-center justify-center rounded-lg glass hover:bg-white/[0.08] hover:border-[var(--syn-function)]/40 text-[var(--ink-dim)] hover:text-[var(--ink)] transition-all hover:shadow-[0_0_12px_rgba(108,182,255,0.2)] cursor-pointer shrink-0"
       >
         <Upload className="h-4 w-4" />
         <input
@@ -213,12 +213,12 @@ export default function Toolbar({
         onClick={onAnalyze}
         disabled={isAnalyzing}
         title="Analyze code quality"
-        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono glass hover:border-[var(--border-strong)] transition-colors disabled:opacity-60 shrink-0"
+        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono font-medium text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 hover:border-emerald-400/50 shadow-[0_0_12px_rgba(16,185,129,0.12)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shrink-0 cursor-pointer"
       >
         {isAnalyzing ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--syn-string)]" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-300" />
         ) : (
-          <Gauge className="h-3.5 w-3.5 text-[var(--syn-string)]" />
+          <Gauge className="h-3.5 w-3.5 text-emerald-300" />
         )}
         Analyze
       </button>
@@ -227,12 +227,12 @@ export default function Toolbar({
         onClick={onDebug}
         disabled={isDebugging}
         title="Open Visual Debugger"
-        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono glass hover:border-[var(--border-strong)] transition-colors disabled:opacity-60 shrink-0"
+        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono font-medium text-amber-300 bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/20 hover:border-amber-400/50 shadow-[0_0_12px_rgba(245,158,11,0.12)] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shrink-0 cursor-pointer"
       >
         {isDebugging ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--syn-const)]" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-300" />
         ) : (
-          <Bug className="h-3.5 w-3.5 text-[var(--syn-const)]" />
+          <Bug className="h-3.5 w-3.5 text-amber-300" />
         )}
         Debug
       </button>
@@ -241,12 +241,12 @@ export default function Toolbar({
         onClick={onExplain}
         disabled={isExplaining}
         title="Learning Mode: explain this code"
-        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono glass hover:border-[var(--border-strong)] transition-colors disabled:opacity-60 shrink-0"
+        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono font-medium text-purple-300 bg-purple-500/10 border border-purple-500/25 hover:bg-purple-500/20 hover:border-purple-400/50 shadow-[0_0_12px_rgba(168,85,247,0.12)] hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shrink-0 cursor-pointer"
       >
         {isExplaining ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--syn-keyword)]" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-300" />
         ) : (
-          <GraduationCap className="h-3.5 w-3.5 text-[var(--syn-keyword)]" />
+          <GraduationCap className="h-3.5 w-3.5 text-purple-300" />
         )}
         Explain
       </button>
@@ -254,19 +254,19 @@ export default function Toolbar({
       <button
         onClick={onConvert}
         title="Convert to another language"
-        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono glass hover:border-[var(--border-strong)] transition-colors shrink-0"
+        className="flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono font-medium text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 hover:border-cyan-400/50 shadow-[0_0_12px_rgba(6,182,212,0.12)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all transform hover:scale-[1.02] active:scale-[0.98] shrink-0 cursor-pointer"
       >
-        <ArrowLeftRight className="h-3.5 w-3.5 text-[var(--syn-function)]" />
+        <ArrowLeftRight className="h-3.5 w-3.5 text-cyan-300" />
         Convert
       </button>
 
       <button
         onClick={onToggleAIPanel}
         title="Toggle AI Assistant panel"
-        className={`hidden md:flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono transition-colors shrink-0 ${
+        className={`hidden md:flex items-center gap-1.5 h-9 rounded-lg px-3 text-[12px] font-mono font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98] shrink-0 cursor-pointer ${
           aiPanelOpen
-            ? "glass-strong text-[var(--syn-keyword)] border-[var(--syn-keyword)]/30"
-            : "glass text-[var(--ink-dim)]"
+            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-400/50 shadow-[0_0_15px_rgba(99,102,241,0.35)]"
+            : "bg-indigo-500/10 text-indigo-300/80 border border-indigo-500/20 hover:bg-indigo-500/20 hover:text-indigo-300"
         }`}
       >
         <PanelRight className="h-3.5 w-3.5" />

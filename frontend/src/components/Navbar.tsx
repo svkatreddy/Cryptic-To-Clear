@@ -102,7 +102,7 @@ export default function Navbar({ activeAssignment, onOpenAssignmentSelector }: N
           ) : (
             <button
               onClick={() => openAuthModal("login")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-mono text-xs text-[var(--ink)] glass hover:bg-white/[0.08] border border-white/10 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-mono text-xs font-medium text-[var(--ink)] glass hover:bg-white/[0.1] hover:border-[var(--syn-keyword)]/40 border border-white/10 transition-all hover:shadow-[0_0_12px_rgba(184,146,255,0.2)] transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5 text-[var(--syn-keyword)]" />
               <span>Sign In</span>
@@ -112,7 +112,7 @@ export default function Navbar({ activeAssignment, onOpenAssignmentSelector }: N
           <Link
             href="/compiler"
             prefetch={true}
-            className="relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all shadow-[0_0_24px_rgba(108,182,255,0.25)]"
+            className="relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-bold text-[#07090e] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 shadow-[0_0_22px_rgba(108,182,255,0.35)] hover:shadow-[0_0_32px_rgba(108,182,255,0.55)] transition-all transform hover:scale-[1.03] active:scale-[0.98]"
           >
             Start Coding
           </Link>

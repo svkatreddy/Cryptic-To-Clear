@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono, Cinzel } from "next/font/google";
+import { Space_Grotesk, Inter, JetBrains_Mono, Cinzel, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
@@ -27,6 +27,12 @@ const cinzel = Cinzel({
   weight: ["600", "700", "800"],
 });
 
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
   title: "Cryptic to Clear — A Tiny Compiler That Explains Its Own Errors",
   description:
@@ -49,7 +55,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${cinzel.variable} antialiased bg-[var(--bg)] text-[var(--ink)]`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${cinzel.variable} ${jakarta.variable} antialiased bg-[var(--bg)] text-[var(--ink)]`}
       >
         <AuthProvider>
           {children}

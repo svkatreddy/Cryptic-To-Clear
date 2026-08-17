@@ -16,12 +16,6 @@ export default function Hero() {
     // Eagerly prefetch compiler assets as soon as home page loads
     router.prefetch("/compiler");
   }, [router]);
-
-  const handleStartCoding = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setNavigating(true);
-    router.push("/compiler");
-  };
   return (
     <section className="relative pt-32 sm:pt-40 pb-24 sm:pb-32 overflow-hidden editor-grid">
       {/* Ambient gradient blobs */}
@@ -47,7 +41,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] tracking-tight"
+            className="font-elaborate-heading text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.08] tracking-tight"
           >
             Cryptic to <span className="text-gradient">Clear</span>
           </motion.h1>
@@ -56,7 +50,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.25 }}
-            className="mt-6 text-base sm:text-lg text-[var(--ink-dim)] max-w-xl mx-auto lg:mx-0 font-medium"
+            className="mt-6 font-elaborate-sub text-base sm:text-lg text-[var(--ink-dim)] max-w-xl mx-auto lg:mx-0 leading-relaxed"
           >
             A tiny compiler that explains its own errors. Write code, run it instantly, and turn mysterious build errors into clear guidance.
           </motion.p>
@@ -70,24 +64,14 @@ export default function Hero() {
             <Link
               href="/compiler"
               prefetch={true}
-              onClick={handleStartCoding}
-              className="group inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium text-[#0a0d13] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(108,182,255,0.25)] cursor-pointer"
+              className="group inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-bold text-[#07090e] bg-gradient-to-r from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] hover:brightness-110 shadow-[0_0_25px_rgba(108,182,255,0.35)] hover:shadow-[0_0_35px_rgba(108,182,255,0.6)] transition-all transform hover:scale-[1.03] active:scale-[0.98] w-full sm:w-auto cursor-pointer"
             >
-              {navigating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <>
-                  <span>Start Coding</span>
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                </>
-              )}
+              <span>Start Coding</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <Link
               href="/features"
-              className="inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium text-[var(--ink)] glass hover:bg-white/[0.06] transition-colors w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium text-[var(--ink)] glass hover:bg-white/[0.1] hover:border-[var(--syn-function)]/40 hover:shadow-[0_0_15px_rgba(108,182,255,0.2)] transition-all transform hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto"
             >
               <PlayCircle className="h-4 w-4 text-[var(--syn-function)]" />
               Learn More

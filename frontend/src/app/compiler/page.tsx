@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { GripVertical, Bot, X } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Toolbar from "@/components/compiler/Toolbar";
 import AIPanel from "@/components/compiler/AIPanel";

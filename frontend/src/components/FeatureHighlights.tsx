@@ -33,12 +33,14 @@ export default function FeatureHighlights() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto mb-14"
+          whileHover={{ scale: 1.03, y: -4 }}
+          className="text-center max-w-2xl mx-auto mb-14 p-6 sm:p-8 rounded-2xl glass-strong border border-white/10 hover:border-[var(--syn-keyword)]/60 hover:bg-white/[0.08] hover:shadow-[0_0_50px_rgba(184,146,255,0.35)] hover:brightness-125 transition-all duration-300 group cursor-pointer"
         >
-          <span className="font-mono text-[12px] text-[var(--syn-function)]">
-            {"// why developers switch"}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-[12px] text-[var(--syn-function)] bg-[var(--syn-function)]/10 border border-[var(--syn-function)]/20 mb-3 group-hover:border-[var(--syn-function)]/50 group-hover:shadow-[0_0_15px_rgba(108,182,255,0.3)] transition-all">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--syn-function)] animate-pulse" />
+
           </span>
-          <h2 className="font-display text-3xl sm:text-4xl font-semibold mt-3 tracking-tight">
+          <h2 className="font-elaborate-heading text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight group-hover:text-gradient transition-all">
             Built for the moment code breaks
           </h2>
         </motion.div>
@@ -51,19 +53,19 @@ export default function FeatureHighlights() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: i * 0.12 }}
-              whileHover={{ scale: 1.04, y: -6 }}
-              className="glass rounded-xl p-6 border border-white/10 hover:border-[var(--syn-keyword)]/60 hover:bg-white/[0.08] hover:shadow-[0_20px_40px_rgba(184,146,255,0.25)] hover:brightness-125 transition-all duration-300 group cursor-pointer"
+              whileHover={{ scale: 1.06, y: -8 }}
+              className="glass rounded-xl p-6 border border-white/10 hover:border-[var(--syn-keyword)]/70 hover:bg-white/[0.1] hover:shadow-[0_25px_50px_rgba(184,146,255,0.35)] hover:brightness-125 transition-all duration-300 group cursor-pointer"
             >
               <div
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg mb-5 group-hover:scale-110 group-hover:brightness-125 transition-all duration-300"
-                style={{ background: `${f.accent}1a` }}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl mb-5 group-hover:scale-125 group-hover:rotate-6 group-hover:brightness-125 transition-all duration-300 shadow-md"
+                style={{ background: `${f.accent}25` }}
               >
-                <f.icon className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" style={{ color: f.accent }} />
+                <f.icon className="h-5.5 w-5.5 group-hover:scale-110 transition-transform duration-300" style={{ color: f.accent }} />
               </div>
-              <h3 className="font-display text-lg font-semibold mb-2 group-hover:text-[var(--syn-keyword)] transition-colors">
+              <h3 className="font-elaborate-heading text-lg font-bold mb-2 group-hover:text-[var(--syn-keyword)] transition-colors">
                 {f.title}
               </h3>
-              <p className="text-sm text-[var(--ink-dim)] leading-relaxed group-hover:text-[var(--ink)] transition-colors">
+              <p className="font-elaborate-sub text-sm text-[var(--ink-dim)] leading-relaxed group-hover:text-[var(--ink)] transition-colors">
                 {f.desc}
               </p>
             </motion.div>
