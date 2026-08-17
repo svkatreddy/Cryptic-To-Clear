@@ -289,8 +289,6 @@ export default function AnalyzerModal({
 }: AnalyzerModalProps) {
   if (!open) return null;
 
-  const timePct = Math.round(analysis?.timePercentile ?? 92.4);
-  const spacePct = Math.round(analysis?.spacePercentile ?? 96.8);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-8">
@@ -356,11 +354,7 @@ export default function AnalyzerModal({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
                       <Zap className="h-4 w-4" />
-                      <span>Runtime / Time Complexity</span>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3" /> Beats {timePct}%
-                    </span>
                   </div>
 
                   <div className="flex items-baseline gap-3">
@@ -368,21 +362,6 @@ export default function AnalyzerModal({
                       {analysis.timeComplexity || "O(N)"}
                     </h2>
                     <span className="text-xs font-mono text-[var(--ink-dim)]">Algorithmic Order</span>
-                  </div>
-
-                  {/* Distribution Visual Progress Bar */}
-                  <div className="space-y-1">
-                    <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-300 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${timePct}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                      />
-                    </div>
-                    <p className="text-[10.5px] font-mono text-[var(--ink-faint)] text-right">
-                      Faster than {timePct}% of {language} submissions
-                    </p>
                   </div>
 
                   <p className="text-[11.5px] font-sans text-[var(--ink-dim)] leading-relaxed pt-1">
@@ -395,11 +374,7 @@ export default function AnalyzerModal({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 font-bold">
                       <HardDrive className="h-4 w-4" />
-                      <span>Memory / Space Complexity</span>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3" /> Beats {spacePct}%
-                    </span>
                   </div>
 
                   <div className="flex items-baseline gap-3">
@@ -407,21 +382,6 @@ export default function AnalyzerModal({
                       {analysis.spaceComplexity || "O(1)"}
                     </h2>
                     <span className="text-xs font-mono text-[var(--ink-dim)]">Auxiliary Memory</span>
-                  </div>
-
-                  {/* Distribution Visual Progress Bar */}
-                  <div className="space-y-1">
-                    <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-cyan-500 to-blue-300 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${spacePct}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                      />
-                    </div>
-                    <p className="text-[10.5px] font-mono text-[var(--ink-faint)] text-right">
-                      Uses less memory than {spacePct}% of {language} submissions
-                    </p>
                   </div>
 
                   <p className="text-[11.5px] font-sans text-[var(--ink-dim)] leading-relaxed pt-1">
