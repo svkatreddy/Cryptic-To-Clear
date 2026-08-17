@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   GripHorizontal,
   Terminal,
@@ -12,9 +12,11 @@ import {
   XCircle,
   Clock,
   HardDrive,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
-export type BottomTab = "output" | "stdin" | "errors";
+export type BottomTab = "output" | "errors";
 
 interface BottomPanelProps {
   output: string;
@@ -49,6 +51,7 @@ export default function BottomPanel({
   onTriggerAiExplain,
 }: BottomPanelProps) {
   const terminalEndRef = useRef<HTMLDivElement>(null);
+  const [showInputBox, setShowInputBox] = useState(true);
 
   const hasExecutionResult =
     status !== "idle" || output.length > 0 || errors.length > 0;
@@ -63,7 +66,7 @@ export default function BottomPanel({
     }
   }, [output, errors, status, hasExecutionResult]);
 
-  const currentTab = activeTab || (errors ? "errors" : "output");
+  const currentTab = activeTab === "errors" || errors ? "errors" : "output";
 
   return (
     <div className="flex h-full flex-col border-t border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--ink)] font-sans select-none">
@@ -77,8 +80,8 @@ export default function BottomPanel({
 
       {/* Terminal Header & Navigation Tabs */}
       <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--border)] shrink-0 bg-[var(--panel)]">
-        {/* Tab selection buttons */}
-        <div className="flex items-center gap-1">
+        {/* Tab selection buttons (LeetCode Style) */}
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => onTabChange?.("output")}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-mono transition-all cursor-pointer ${
@@ -88,24 +91,9 @@ export default function BottomPanel({
             }`}
           >
             <Terminal className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Output</span>
+            <span>Testcase & Output</span>
             {output && (
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            )}
-          </button>
-
-          <button
-            onClick={() => onTabChange?.("stdin")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-mono transition-all cursor-pointer ${
-              currentTab === "stdin"
-                ? "bg-[var(--bg)] text-[var(--ink)] font-bold shadow-sm border border-[var(--border)]"
-                : "text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-white/5"
-            }`}
-          >
-            <FileText className="h-3.5 w-3.5 text-purple-400" />
-            <span>STDIN Input</span>
-            {input.trim() && (
-              <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
             )}
           </button>
 
@@ -122,7 +110,7 @@ export default function BottomPanel({
                 errors ? "text-rose-400" : "text-gray-400"
               }`}
             />
-            <span>Errors & Logs</span>
+            <span>Errors & Diagnostics</span>
             {errors && (
               <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
                 1
@@ -178,99 +166,131 @@ export default function BottomPanel({
         </div>
       </div>
 
-      {/* Terminal View Content Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--bg)] p-4 font-mono text-[13px] leading-relaxed select-text">
-        {/* TAB 1: OUTPUT */}
+      {/* Combined LeetCode-Style Terminal View Content Area */}
+      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--bg)] p-4 pb-12 font-mono text-[13px] leading-relaxed select-text space-y-4">
         {currentTab === "output" && (
           <div className="space-y-4">
-            {output ? (
-              <div className="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-[var(--ink)]">
-                {output.split("\n").map((line, idx) => {
-                  const trimmed = line.trim();
-                  if (trimmed.startsWith(">")) {
+            {/* LEETCODE SECTION 1: STDIN INPUT BOX (In Same View) */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-white/[0.02] border-b border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-3.5 w-3.5 text-purple-400" />
+                  <span className="text-[12px] font-bold text-[var(--ink)]">
+                    Input (STDIN)
+                  </span>
+                  {input.trim() && (
+                    <span className="text-[10px] font-mono text-purple-300 bg-purple-500/10 px-1.5 py-0.2 rounded border border-purple-500/20">
+                      Preset
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowInputBox((v) => !v)}
+                  className="flex items-center gap-1 text-[11px] text-[var(--ink-dim)] hover:text-[var(--ink)] cursor-pointer"
+                >
+                  <span>{showInputBox ? "Collapse" : "Expand"}</span>
+                  {showInputBox ? (
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
+
+              {showInputBox && (
+                <div className="p-2.5">
+                  <textarea
+                    value={input}
+                    onChange={(e) => onInputChange?.(e.target.value)}
+                    disabled={isRunning}
+                    placeholder="Enter program input here (e.g. 5 or array inputs)..."
+                    spellCheck={false}
+                    className="w-full min-h-[60px] max-h-[120px] resize-y rounded-lg border border-[var(--border)] bg-[var(--bg)] p-2.5 text-[12.5px] font-mono text-[var(--ink)] placeholder:text-[var(--ink-faint)] outline-none transition-all focus:border-[var(--syn-function)] disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* LEETCODE SECTION 2: OUTPUT (Stdout in Same View) */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 space-y-2">
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <Terminal className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-[12px] font-bold text-[var(--ink)]">
+                    Output (Stdout)
+                  </span>
+                </div>
+              </div>
+
+              {output ? (
+                <div className="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-[var(--ink)] bg-[var(--bg)] p-3 rounded-lg border border-[var(--border)] min-h-[70px]">
+                  {output.split("\n").map((line, idx) => {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith(">")) {
+                      return (
+                        <div
+                          key={idx}
+                          className="text-[var(--syn-function)] font-bold py-0.5"
+                        >
+                          {line}
+                        </div>
+                      );
+                    }
                     return (
-                      <div
-                        key={idx}
-                        className="text-[var(--syn-function)] font-bold py-0.5"
-                      >
+                      <div key={idx} className="text-[var(--ink)] py-0.5">
                         {line}
                       </div>
                     );
-                  }
-                  return (
-                    <div key={idx} className="text-[var(--ink)] py-0.5">
-                      {line}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : !errors && status === "idle" ? (
-              <div className="flex flex-col items-center justify-center py-10 text-[var(--ink-faint)] italic select-none">
-                <Terminal className="h-8 w-8 mb-2 opacity-30" />
-                <p>Program output will appear here after execution...</p>
-              </div>
-            ) : errors ? (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-                <p className="font-bold mb-1">Execution completed with errors.</p>
-                <p className="text-[var(--ink-dim)]">
-                  Check the <strong className="text-rose-400">Errors & Logs</strong> tab for details.
-                </p>
-              </div>
-            ) : null}
+                  })}
+                </div>
+              ) : !errors && status === "idle" ? (
+                <div className="flex flex-col items-center justify-center py-6 text-[var(--ink-faint)] italic select-none">
+                  <Terminal className="h-6 w-6 mb-1 opacity-30" />
+                  <p className="text-xs">Program output will appear here after execution...</p>
+                </div>
+              ) : errors ? (
+                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+                  <p className="font-bold mb-1">Execution completed with errors.</p>
+                  <p className="text-[var(--ink-dim)]">
+                    Check the <strong className="text-rose-400">Errors & Diagnostics</strong> tab for details.
+                  </p>
+                </div>
+              ) : null}
+            </div>
 
-            {/* Termination Banner */}
+            {/* Termination Banner & Padding (Sitting cleanly above floating badges) */}
             {hasExecutionResult && !isRunning && (
-              <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--ink-dim)]">
+              <div className="mt-4 pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between text-[11px] text-[var(--ink-dim)] gap-2 pb-6">
                 <div className="flex items-center gap-2">
                   <span
                     className={
                       status === "success"
-                        ? "h-2 w-2 rounded-full bg-emerald-400"
-                        : "h-2 w-2 rounded-full bg-rose-400"
+                        ? "h-2 w-2 rounded-full bg-emerald-400 shrink-0"
+                        : "h-2 w-2 rounded-full bg-rose-400 shrink-0"
                     }
                   />
-                  <span>
+                  <span className="font-mono font-medium">
                     {status === "success"
                       ? "Process terminated cleanly (Exit Code 0)."
                       : "Process terminated with error status (Exit Code 1)."}
                   </span>
                 </div>
-                <span>
-                  Runtime: {executionTime} | Memory: {memoryUsage}
-                </span>
+
+                <div className="flex items-center gap-3 font-mono text-[11px] text-[var(--ink-dim)]">
+                  <span>Runtime: <strong>{executionTime}</strong></span>
+                  <span>Memory: <strong>{memoryUsage}</strong></span>
+                </div>
               </div>
             )}
             <div ref={terminalEndRef} />
           </div>
         )}
 
-        {/* TAB 2: STDIN INPUT */}
-        {currentTab === "stdin" && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-[12px] font-semibold text-[var(--ink-dim)] uppercase tracking-wide flex items-center gap-1.5">
-                <FileText className="h-3.5 w-3.5 text-purple-400" />
-                Standard Input (STDIN)
-              </label>
-              <span className="text-[11px] text-[var(--ink-faint)]">
-                Provide inputs line-by-line before running
-              </span>
-            </div>
-
-            <textarea
-              value={input}
-              onChange={(e) => onInputChange?.(e.target.value)}
-              disabled={isRunning}
-              placeholder="e.g. 5&#10;10 20 30"
-              spellCheck={false}
-              className="w-full min-h-[140px] resize-y rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 text-[13px] font-mono text-[var(--ink)] placeholder:text-[var(--ink-faint)] outline-none transition-all focus:border-[var(--syn-function)] focus:ring-1 focus:ring-[var(--syn-function)] disabled:opacity-60 disabled:cursor-not-allowed"
-            />
-          </div>
-        )}
-
-        {/* TAB 3: ERRORS & COMPILER LOGS */}
+        {/* ERRORS & COMPILER LOGS */}
         {currentTab === "errors" && (
-          <div className="space-y-4">
+          <div className="space-y-4 pb-6">
             {errors ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
@@ -279,7 +299,7 @@ export default function BottomPanel({
                     <span>Compiler / Runtime Diagnostics</span>
                   </div>
 
-                  {/* Explicit AI Explanation Button (Item 3 Pedagogical Fix) */}
+                  {/* Explicit AI Explanation Button */}
                   {onTriggerAiExplain && (
                     <button
                       onClick={onTriggerAiExplain}
