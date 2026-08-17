@@ -26,6 +26,12 @@ interface CodeEditorProps {
   highlightLines?: number[];
   /** The Visual Debugger's currently-executing line, or null when not debugging. */
   currentLine?: number | null;
+  onRun?: () => void;
+  onCompile?: () => void;
+  onDownloadCode?: () => void;
+  onToggleAIPanel?: () => void;
+  onFocusAIChat?: () => void;
+  onShowShortcuts?: () => void;
 }
 
 export default function CodeEditor({
@@ -35,15 +41,54 @@ export default function CodeEditor({
   settings,
   highlightLines,
   currentLine,
+  onRun,
+  onCompile,
+  onDownloadCode,
+  onToggleAIPanel,
+  onFocusAIChat,
+  onShowShortcuts,
 }: CodeEditorProps) {
   const editorRef = useRef<MonacoEditorInstance | null>(null);
   const decorationsRef = useRef<DecorationsCollection | null>(null);
   const debugDecorationsRef = useRef<DecorationsCollection | null>(null);
 
-  const handleMount: OnMount = (editor) => {
+  const onRunRef = useRef(onRun);
+  const onCompileRef = useRef(onCompile);
+  const onDownloadCodeRef = useRef(onDownloadCode);
+  const onToggleAIPanelRef = useRef(onToggleAIPanel);
+  const onFocusAIChatRef = useRef(onFocusAIChat);
+  const onShowShortcutsRef = useRef(onShowShortcuts);
+
+  useEffect(() => {
+    onRunRef.current = onRun;
+    onCompileRef.current = onCompile;
+    onDownloadCodeRef.current = onDownloadCode;
+    onToggleAIPanelRef.current = onToggleAIPanel;
+    onFocusAIChatRef.current = onFocusAIChat;
+    onShowShortcutsRef.current = onShowShortcuts;
+  });
+
+  const handleMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     editor.updateOptions({ tabSize: 2, glyphMargin: true });
     editor.focus();
+
+    // Register shortcuts inside Monaco so Ctrl+Enter / Ctrl+Shift+Enter / Ctrl+S / Ctrl+B work while typing in Monaco
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      onRunRef.current?.();
+    });
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => {
+      onCompileRef.current?.();
+    });
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      onDownloadCodeRef.current?.();
+    });
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB, () => {
+      onToggleAIPanelRef.current?.();
+    });
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => {
+      onFocusAIChatRef.current?.();
+    });
   };
 
   // Apply/clear the "changed lines" decorations whenever the highlighted set
@@ -148,6 +193,10 @@ export default function CodeEditor({
         lineNumbers: settings.lineNumbers ? "on" : "off",
         bracketPairColorization: { enabled: settings.bracketMatching },
         matchBrackets: settings.bracketMatching ? "always" : "never",
+        autoClosingBrackets: settings.bracketMatching ? "always" : "never",
+        autoClosingQuotes: settings.bracketMatching ? "always" : "never",
+        autoSurround: settings.bracketMatching ? "languageDefined" : "never",
+        mouseWheelZoom: false,
         fontFamily:
           "var(--font-mono), 'JetBrains Mono', ui-monospace, monospace",
         fontLigatures: true,
