@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Bot, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Toolbar from "@/components/compiler/Toolbar";
 import AIPanel from "@/components/compiler/AIPanel";
@@ -160,6 +161,7 @@ export default function CompilerPage() {
 
   const [aiPanelOpen, setAiPanelOpen] = useState(true);
   const [aiOverlayOpen, setAiOverlayOpen] = useState(false);
+  const [showAiAssistPrompt, setShowAiAssistPrompt] = useState(false);
 
   // Permanent AI chat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -820,6 +822,8 @@ export default function CompilerPage() {
     if (errorText) {
       setBottomTab("errors");
       setStatus("error");
+      setShowAiAssistPrompt(true);
+      setTimeout(() => setShowAiAssistPrompt(false), 8000);
     } else {
       setBottomTab("output");
       setStatus("success");
@@ -1348,6 +1352,40 @@ export default function CompilerPage() {
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        {showAiAssistPrompt && !aiOverlayOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-20 right-5 z-40 max-w-[280px] p-3 rounded-2xl glass-strong border border-[var(--border-strong)] shadow-2xl flex items-start gap-3 cursor-pointer hover:border-[var(--syn-keyword)] transition-colors group"
+            onClick={() => {
+              setShowAiAssistPrompt(false);
+              setAiOverlayOpen(true);
+              const inputElement = document.getElementById("chat-input");
+              if (inputElement) inputElement.focus();
+            }}
+          >
+            <div className="shrink-0 p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 text-rose-400 group-hover:text-rose-300">
+              <Bot className="h-5 w-5" />
+            </div>
+            <div className="flex-1 space-y-1 mt-0.5">
+              <p className="text-[13px] font-semibold text-[var(--ink)] leading-tight">Need help debugging?</p>
+              <p className="text-[11.5px] text-[var(--ink-dim)] leading-snug">Ask the AI Assistant to explain or fix this error.</p>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAiAssistPrompt(false);
+              }}
+              className="shrink-0 p-1 rounded-lg hover:bg-white/10 text-[var(--ink-faint)] hover:text-[var(--ink)]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {saveNote && autoSave && (
         <div className="fixed bottom-5 left-5 z-40 font-mono text-[11px] text-[var(--syn-string)] glass rounded-full px-3 py-1.5">
