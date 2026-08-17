@@ -1139,7 +1139,7 @@ export default function CompilerPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-[var(--bg)]">
+    <main className="h-screen h-[100dvh] overflow-hidden bg-[var(--bg)]">
       <Navbar
         activeAssignment={isFaculty ? null : activeAssignment}
         onOpenAssignmentSelector={isFaculty ? undefined : () => setShowAssignmentModal(true)}
