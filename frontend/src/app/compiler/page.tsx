@@ -6,7 +6,7 @@ import { GripVertical } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Toolbar from "@/components/compiler/Toolbar";
 import AIPanel from "@/components/compiler/AIPanel";
-import BottomPanel, { BottomTab } from "@/components/compiler/BottomPanel";
+import BottomPanel, { BottomTab, TestCase } from "@/components/compiler/BottomPanel";
 import { EditorSettings } from "@/components/compiler/CodeEditor";
 import { LANGUAGES, LanguageConfig, getLanguage } from "@/lib/languages";
 import { getStoredTheme, Theme } from "@/lib/theme";
@@ -166,8 +166,7 @@ export default function CompilerPage() {
   const [chatInput, setChatInput] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
 
-  // "Apply AI Fix" bookkeeping, keyed by the explanation message's id so
-  // each fix in the chat history tracks its own applied/undo state.
+  // "Apply AI Fix" bookkeeping
   const [fixState, setFixState] = useState<Record<string, FixState>>({});
   const [highlightLines, setHighlightLines] = useState<number[]>([]);
   const [diffTarget, setDiffTarget] = useState<ExplanationChatMessage | null>(null);
@@ -212,6 +211,10 @@ export default function CompilerPage() {
   const [exportNote, setExportNote] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  // Test Cases State
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const activeExecutionController = useRef<AbortController | null>(null);
 
   // Student Assignment State
   const [studentAssignments, setStudentAssignments] = useState<AssignmentItem[]>([]);
@@ -764,7 +767,61 @@ export default function CompilerPage() {
     setConverterOpen(false);
   };
 
-  // ---- Run / Compile ------------------------------------------------------
+  // ---- Run / Compile / Test Cases / Termination ---------------------------
+
+  const handleStopExecution = useCallback(() => {
+    if (activeExecutionController.current) {
+      activeExecutionController.current.abort();
+      activeExecutionController.current = null;
+    }
+    setIsRunning(false);
+    setIsCompiling(false);
+    setStatus("idle");
+    setErrors("Execution terminated by user.");
+  }, []);
+
+  const handleRunTestCases = useCallback(
+    async (cases: TestCase[]) => {
+      if (cases.length === 0) return;
+      setBottomTab("testcases");
+      setIsRunning(true);
+      setStatus("running");
+
+      const updated = [...cases];
+      for (let i = 0; i < updated.length; i++) {
+        updated[i] = { ...updated[i], status: "running" };
+        setTestCases([...updated]);
+
+        const result = await executeCode({
+          language,
+          sourceCode: code,
+          stdin: updated[i].input,
+        });
+
+        if (!result.success) {
+          updated[i] = {
+            ...updated[i],
+            status: "error",
+            actualOutput: "",
+            error: result.message,
+          };
+        } else {
+          const actual = (result.output || "").trim();
+          const expected = (updated[i].expectedOutput || "").trim();
+          const passed = actual === expected;
+          updated[i] = {
+            ...updated[i],
+            status: passed ? "pass" : "fail",
+            actualOutput: result.output,
+          };
+        }
+        setTestCases([...updated]);
+      }
+      setIsRunning(false);
+      setStatus("success");
+    },
+    [language, code]
+  );
 
   // Track active execution session inputs so previous run data is never saved or leaked across runs
   const [sessionInput, setSessionInput] = useState("");
@@ -1124,8 +1181,8 @@ export default function CompilerPage() {
       }
     };
 
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [
     shortcutsOpen,
     diffTarget,
@@ -1247,6 +1304,15 @@ export default function CompilerPage() {
                     ? trace.steps[debugStepIndex]?.line ?? null
                     : null
                 }
+                onRun={handleRun}
+                onCompile={handleCompile}
+                onDownloadCode={handleDownloadCode}
+                onToggleAIPanel={() => setAiPanelOpen((v) => !v)}
+                onFocusAIChat={() => {
+                  setAiPanelOpen(true);
+                  setTimeout(() => document.getElementById("ai-chat-input")?.focus(), 60);
+                }}
+                onShowShortcuts={() => setShortcutsOpen(true)}
               />
             </div>
             <div style={{ height: bottomHeight }} className="shrink-0">
@@ -1261,11 +1327,15 @@ export default function CompilerPage() {
                   setStatus("idle");
                   setSessionInput("");
                 }}
+                onStopExecution={handleStopExecution}
                 isRunning={isRunning}
                 input={input}
                 onInputChange={setInput}
                 activeTab={bottomTab}
                 onTabChange={setBottomTab}
+                testCases={testCases}
+                onTestCasesChange={setTestCases}
+                onRunTestCases={handleRunTestCases}
                 onResizeStart={(e) => {
                   e.preventDefault();
                   resizing.current = true;
