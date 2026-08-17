@@ -346,6 +346,30 @@ const ANALYSIS_SCHEMA = {
         type: "string",
         description: "A 1-2 sentence overall assessment of the code quality.",
       },
+      timeComplexity: {
+        type: "string",
+        description: "Big-O time complexity (e.g. 'O(N log N)').",
+      },
+      timePercentile: {
+        type: "number",
+        description: "Estimated LeetCode submission percentile beats score for time complexity (0.0 to 100.0).",
+      },
+      timeExplanation: {
+        type: "string",
+        description: "Detailed algorithmic explanation of the time complexity.",
+      },
+      spaceComplexity: {
+        type: "string",
+        description: "Big-O space complexity (e.g. 'O(1)' or 'O(N)').",
+      },
+      spacePercentile: {
+        type: "number",
+        description: "Estimated LeetCode submission percentile beats score for memory/space (0.0 to 100.0).",
+      },
+      spaceExplanation: {
+        type: "string",
+        description: "Detailed memory allocation explanation of the space complexity.",
+      },
       performanceSuggestions: {
         type: "array",
         description: "0-5 concrete performance improvement suggestions.",
@@ -373,6 +397,30 @@ const ANALYSIS_SCHEMA = {
           },
           required: ["issue", "detail", "severity"],
         },
+      },
+      edgeCases: {
+        type: "array",
+        description: "Evaluation of critical edge cases.",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            caseName: { type: "string" },
+            handled: { type: "boolean" },
+            note: { type: "string" },
+          },
+          required: ["caseName", "handled", "note"],
+        },
+      },
+      optimalComparison: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          isOptimal: { type: "boolean" },
+          theoreticalOptimalTime: { type: "string" },
+          suggestion: { type: "string" },
+        },
+        required: ["isOptimal", "theoreticalOptimalTime", "suggestion"],
       },
       unusedVariables: {
         type: "array",
@@ -427,8 +475,16 @@ const ANALYSIS_SCHEMA = {
       "readabilityScore",
       "maintainabilityScore",
       "summary",
+      "timeComplexity",
+      "timePercentile",
+      "timeExplanation",
+      "spaceComplexity",
+      "spacePercentile",
+      "spaceExplanation",
       "performanceSuggestions",
       "securityIssues",
+      "edgeCases",
+      "optimalComparison",
       "unusedVariables",
       "duplicateCode",
       "deadCode",
@@ -440,13 +496,21 @@ const ANALYSIS_SCHEMA = {
 };
 
 const ANALYSIS_SYSTEM_PROMPT =
-  "You are Cryptic to Clear's static code quality analyzer. Review the source code and return ONLY a JSON object matching this format:\n" +
+  "You are Cryptic to Clear's LeetCode-grade code analyzer. Review the source code strictly based on its actual algorithmic logic and control flow (NOT class names or file names). Return ONLY a JSON object matching this format:\n" +
   "{\n" +
   '  "readabilityScore": 85,\n' +
   '  "maintainabilityScore": 80,\n' +
   '  "summary": "Brief overall code quality assessment",\n' +
+  '  "timeComplexity": "O(N)",\n' +
+  '  "timePercentile": 94.5,\n' +
+  '  "timeExplanation": "Single pass iteration through input elements",\n' +
+  '  "spaceComplexity": "O(1)",\n' +
+  '  "spacePercentile": 98.2,\n' +
+  '  "spaceExplanation": "Uses constant auxiliary memory",\n' +
   '  "performanceSuggestions": [{"title": "Performance Tip", "detail": "Detail text", "impact": "medium"}],\n' +
   '  "securityIssues": [],\n' +
+  '  "edgeCases": [{"caseName": "Empty Input / Null Bounds", "handled": true, "note": "Checked at start of function"}],\n' +
+  '  "optimalComparison": {"isOptimal": true, "theoreticalOptimalTime": "O(N)", "suggestion": "This is the optimal solution."},\n' +
   '  "unusedVariables": [],\n' +
   '  "duplicateCode": [],\n' +
   '  "deadCode": [],\n' +
@@ -454,7 +518,9 @@ const ANALYSIS_SYSTEM_PROMPT =
   '  "functionNamingSuggestions": [],\n' +
   '  "aiRecommendations": ["Tip 1", "Tip 2"]\n' +
   "}\n" +
-  "Return raw JSON starting with { and ending with } only.";
+  "RULES:\n" +
+  "1. Return raw JSON starting with { and ending with } only.\n" +
+  "2. Base logic and complexity strictly on programmatic statements, ignoring misleading class names.";
 
 function buildAnalysisPrompt({ language, sourceCode }) {
   return [

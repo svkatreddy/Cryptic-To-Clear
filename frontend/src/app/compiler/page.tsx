@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Bot, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Toolbar from "@/components/compiler/Toolbar";
 import AIPanel from "@/components/compiler/AIPanel";
@@ -25,6 +26,7 @@ import {
   AssignmentItem,
 } from "@/lib/api";
 import StudentAssignmentsModal from "@/components/compiler/StudentAssignmentsModal";
+import { useAuth } from "@/context/AuthContext";
 import { changedLineNumbers } from "@/lib/diff";
 import {
   downloadTextFile,
@@ -139,6 +141,9 @@ function formatMemory(memoryKb: number | null): string {
 }
 
 export default function CompilerPage() {
+  const { user } = useAuth();
+  const isFaculty = user?.role === "faculty" || user?.role === "admin" || user?.isDemoAccount;
+
   const [language, setLanguage] = useState<string>("c");
   const [codeMap, setCodeMap] = useState<Record<string, string>>(
     defaultCodeMap()
@@ -156,6 +161,7 @@ export default function CompilerPage() {
 
   const [aiPanelOpen, setAiPanelOpen] = useState(true);
   const [aiOverlayOpen, setAiOverlayOpen] = useState(false);
+  const [showAiAssistPrompt, setShowAiAssistPrompt] = useState(false);
 
   // Permanent AI chat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -232,14 +238,15 @@ export default function CompilerPage() {
   const resizing = useRef(false);
   const aiResizing = useRef(false);
 
-  // Fetch course assignments on mount
+  // Fetch course assignments on mount (for non-faculty students)
   useEffect(() => {
+    if (isFaculty) return;
     fetchStudentAssignments().then((res) => {
       if (res.success && res.data) {
         setStudentAssignments(res.data);
       }
     });
-  }, []);
+  }, [isFaculty]);
 
   const handleSelectAssignment = useCallback((asg: AssignmentItem | null) => {
     setActiveAssignment(asg);
@@ -869,19 +876,17 @@ export default function CompilerPage() {
     setExecutionTime(formatTime(result.time));
     setMemoryUsage(formatMemory(result.memory));
 
-    if (result.compileError) {
-      void triggerAIExplain(result.compileError, language, code);
-    }
-
     if (errorText) {
       setBottomTab("errors");
       setStatus("error");
+      setShowAiAssistPrompt(true);
+      setTimeout(() => setShowAiAssistPrompt(false), 8000);
     } else {
       setBottomTab("output");
       setStatus("success");
     }
     setIsRunning(false);
-  }, [currentLang, language, code, input, triggerAIExplain]);
+  }, [currentLang, language, code, input]);
 
   const handleSubmitTerminalInput = useCallback(
     async (inputValueLine: string) => {
@@ -980,7 +985,6 @@ export default function CompilerPage() {
     if (result.compileError) {
       setErrors(`Compilation Error:\n${result.compileError}`);
       setStatus("error");
-      void triggerAIExplain(result.compileError, language, code);
     } else if (result.languageType === "interpreted") {
       setErrors(
         `${currentLang.label} has no separate compile step — the interpreter checked your code while running it.\n\n0 errors, 0 warnings.`
@@ -991,7 +995,7 @@ export default function CompilerPage() {
       setStatus("success");
     }
     setIsCompiling(false);
-  }, [currentLang, language, code, input, triggerAIExplain]);
+  }, [currentLang, language, code, input]);
 
   const handleClear = () => {
     setCodeMap((m) => ({ ...m, [language]: "" }));
@@ -1192,10 +1196,10 @@ export default function CompilerPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-[var(--bg)]">
+    <main className="h-screen h-[100dvh] overflow-hidden bg-[var(--bg)]">
       <Navbar
-        activeAssignment={activeAssignment}
-        onOpenAssignmentSelector={() => setShowAssignmentModal(true)}
+        activeAssignment={isFaculty ? null : activeAssignment}
+        onOpenAssignmentSelector={isFaculty ? undefined : () => setShowAssignmentModal(true)}
       />
 
       <div
@@ -1206,9 +1210,9 @@ export default function CompilerPage() {
         <Toolbar
           language={language}
           onLanguageChange={handleLanguageChange}
-          allowedLanguages={activeAssignment?.languageMode === "RESTRICTED" ? activeAssignment.allowedLanguages : undefined}
-          activeAssignment={activeAssignment}
-          onSubmitAssignment={handleAssignmentSubmit}
+          allowedLanguages={!isFaculty && activeAssignment?.languageMode === "RESTRICTED" ? activeAssignment.allowedLanguages : undefined}
+          activeAssignment={isFaculty ? null : activeAssignment}
+          onSubmitAssignment={isFaculty ? undefined : handleAssignmentSubmit}
           isSubmittingAssignment={isSubmittingAssignment}
           onRun={handleRun}
           onCompile={handleCompile}
@@ -1245,8 +1249,8 @@ export default function CompilerPage() {
           onShowShortcuts={() => setShortcutsOpen(true)}
         />
 
-        {/* Active Assignment Header (Requirement 4) */}
-        {activeAssignment && (
+        {/* Active Assignment Header (Requirement 4 - Students only) */}
+        {!isFaculty && activeAssignment && (
           <div className="px-4 py-2 bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-purple-900/30 border-b border-purple-500/20 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
             <div className="flex items-center gap-3">
               <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
@@ -1291,6 +1295,7 @@ export default function CompilerPage() {
                 onChange={handleCodeChange}
                 settings={settings}
                 highlightLines={highlightLines}
+                disableCopyPaste={!!activeAssignment}
                 currentLine={
                   debuggerOpen &&
                     debugStatus === "success" &&
@@ -1331,6 +1336,13 @@ export default function CompilerPage() {
                 testCases={testCases}
                 onTestCasesChange={setTestCases}
                 onRunTestCases={handleRunTestCases}
+                executionTime={executionTime}
+                memoryUsage={memoryUsage}
+                onTriggerAiExplain={() => {
+                  if (errors) {
+                    void triggerAIExplain(errors, language, code);
+                  }
+                }}
                 onResizeStart={(e) => {
                   e.preventDefault();
                   resizing.current = true;
@@ -1411,6 +1423,45 @@ export default function CompilerPage() {
         </div>
       )}
 
+      <AnimatePresence>
+        {showAiAssistPrompt && !aiOverlayOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-20 right-5 z-40 max-w-[280px] p-3 rounded-2xl glass-strong border border-[var(--border-strong)] shadow-2xl flex items-start gap-3 cursor-pointer hover:border-[var(--syn-keyword)] transition-colors group"
+            onClick={() => {
+              setShowAiAssistPrompt(false);
+              setAiOverlayOpen(true); // for mobile
+              setAiPanelOpen(true);   // for desktop
+              
+              // Wait for the panel to render before focusing
+              setTimeout(() => {
+                const inputElement = document.getElementById("chat-input");
+                if (inputElement) inputElement.focus();
+              }, 100);
+            }}
+          >
+            <div className="shrink-0 p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 text-rose-400 group-hover:text-rose-300">
+              <Bot className="h-5 w-5" />
+            </div>
+            <div className="flex-1 space-y-1 mt-0.5">
+              <p className="text-[13px] font-semibold text-[var(--ink)] leading-tight">Need help debugging?</p>
+              <p className="text-[11.5px] text-[var(--ink-dim)] leading-snug">Ask the AI Assistant to explain or fix this error.</p>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAiAssistPrompt(false);
+              }}
+              className="shrink-0 p-1 rounded-lg hover:bg-white/10 text-[var(--ink-faint)] hover:text-[var(--ink)]"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {saveNote && autoSave && (
         <div className="fixed bottom-5 left-5 z-40 font-mono text-[11px] text-[var(--syn-string)] glass rounded-full px-3 py-1.5">
           {saveNote}
@@ -1488,7 +1539,7 @@ export default function CompilerPage() {
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {/* Student Assignment Selector Modal */}
-      {showAssignmentModal && (
+      {!isFaculty && showAssignmentModal && (
         <StudentAssignmentsModal
           assignments={studentAssignments}
           activeAssignment={activeAssignment}

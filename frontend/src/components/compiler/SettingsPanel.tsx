@@ -41,12 +41,13 @@ function Toggle({
     >
       <span className="text-[13px] text-[var(--ink-dim)]">{label}</span>
       <span
-        className="relative h-5 w-9 rounded-full transition-colors shrink-0"
+        className="relative flex h-5 w-9 items-center rounded-full transition-colors shrink-0 px-0.5"
         style={{ background: checked ? accent : "var(--border-strong)" }}
       >
         <span
-          className="absolute top-0.5 h-4 w-4 rounded-full bg-[var(--bg)] transition-transform shadow-sm"
-          style={{ transform: checked ? "translateX(18px)" : "translateX(2px)" }}
+          className={`h-4 w-4 rounded-full bg-[var(--bg)] transition-transform shadow-sm ${
+            checked ? "translate-x-4" : "translate-x-0"
+          }`}
         />
       </span>
     </button>

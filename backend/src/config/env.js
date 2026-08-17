@@ -34,7 +34,7 @@ const env = {
       process.env.GROQ_API_KEY_PRIMARY,
       process.env.GROQ_API_KEY_SECONDARY,
     ]),
-    model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
+    model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
     baseUrl: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
     requestTimeoutMs: Number(process.env.GROQ_TIMEOUT_MS) || 6000,
   },

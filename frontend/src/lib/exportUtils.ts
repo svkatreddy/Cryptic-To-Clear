@@ -300,10 +300,5 @@ export function interleaveInputWithOutput(rawOutput: string, stdinText: string):
     resultLines.push(line);
   }
 
-  while (inputsToAssign.length > 0) {
-    const inputVal = inputsToAssign.shift()!;
-    resultLines.push(`> ${inputVal}`);
-  }
-
   return resultLines.join("\n");
 }

@@ -45,9 +45,8 @@ export default function CodeTraceView({
               {lineNo}
             </span>
             <span
-              className={`relative flex-1 whitespace-pre pr-4 py-0.5 ${
-                active ? "text-[var(--ink)]" : "text-[var(--ink-dim)]"
-              }`}
+              className={`relative flex-1 whitespace-pre pr-4 py-0.5 ${active ? "text-[var(--ink)]" : "text-[var(--ink-dim)]"
+                }`}
             >
               {line || " "}
             </span>
