@@ -29,7 +29,6 @@ export default function Hero() {
       <div className="blob h-[380px] w-[380px] bg-[var(--syn-function)] top-20 -right-24" />
       <div className="blob h-[300px] w-[300px] bg-[var(--syn-string)] bottom-0 left-1/3" />
 
-      <FloatingSnippets />
 
       <div className="relative mx-auto max-w-7xl px-5 sm:px-8 grid lg:grid-cols-2 gap-16 items-center">
         {/* Left: copy */}

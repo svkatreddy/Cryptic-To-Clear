@@ -10,25 +10,5 @@ const SNIPPETS = [
 ];
 
 export default function FloatingSnippets() {
-  return (
-    <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden="true">
-      {SNIPPETS.map((s, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 + s.delay }}
-          className={`absolute ${s.pos}`}
-        >
-          <div
-            className="drift glass rounded-lg px-3.5 py-2 font-mono text-[11.5px] text-[var(--ink-dim)] shadow-lg"
-            style={{ ["--tilt" as string]: s.tilt, animationDelay: `${s.delay}s` }}
-          >
-            <span className="text-[var(--syn-const)] mr-1.5">{s.lang}</span>
-            {s.text}
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
+  return null;
 }

@@ -51,19 +51,19 @@ export default function FeatureHighlights() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: i * 0.12 }}
-              whileHover={{ y: -6 }}
-              className="glass rounded-xl p-6 hover:border-[var(--border-strong)] transition-colors"
+              whileHover={{ scale: 1.04, y: -6 }}
+              className="glass rounded-xl p-6 border border-white/10 hover:border-[var(--syn-keyword)]/60 hover:bg-white/[0.08] hover:shadow-[0_20px_40px_rgba(184,146,255,0.25)] hover:brightness-125 transition-all duration-300 group cursor-pointer"
             >
               <div
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg mb-5"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg mb-5 group-hover:scale-110 group-hover:brightness-125 transition-all duration-300"
                 style={{ background: `${f.accent}1a` }}
               >
-                <f.icon className="h-5 w-5" style={{ color: f.accent }} />
+                <f.icon className="h-5 w-5 group-hover:scale-110 transition-transform duration-300" style={{ color: f.accent }} />
               </div>
-              <h3 className="font-display text-lg font-semibold mb-2">
+              <h3 className="font-display text-lg font-semibold mb-2 group-hover:text-[var(--syn-keyword)] transition-colors">
                 {f.title}
               </h3>
-              <p className="text-sm text-[var(--ink-dim)] leading-relaxed">
+              <p className="text-sm text-[var(--ink-dim)] leading-relaxed group-hover:text-[var(--ink)] transition-colors">
                 {f.desc}
               </p>
             </motion.div>

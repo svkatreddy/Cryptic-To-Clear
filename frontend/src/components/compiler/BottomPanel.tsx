@@ -145,10 +145,11 @@ export default function BottomPanel({
         <div className="flex items-center gap-1.5 overflow-x-auto">
           <button
             onClick={() => onTabChange?.("output")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-mono transition-all cursor-pointer ${activeTab === "output"
-              ? "bg-[var(--bg)] text-[var(--ink)] font-bold shadow-sm border border-[var(--border)]"
-              : "text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-white/5"
-              }`}
+            className={`px-3 py-1 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "output"
+                ? "bg-[var(--bg)] text-[var(--ink)] shadow-sm font-semibold"
+                : "text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            }`}
           >
             <Terminal className="h-3.5 w-3.5 text-emerald-400" />
             <span>Output</span>
@@ -175,10 +176,11 @@ export default function BottomPanel({
           <button
             type="button"
             onClick={() => onTabChange?.("stdin")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-mono transition-all cursor-pointer ${activeTab === "stdin"
-              ? "bg-[var(--bg)] text-[var(--ink)] font-bold shadow-sm border border-[var(--border)]"
-              : "text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-white/5"
-              }`}
+            className={`px-3 py-1 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
+              activeTab === "stdin"
+                ? "bg-[var(--bg)] text-[var(--ink)] shadow-sm font-semibold"
+                : "text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            }`}
           >
             <FileText className="h-3.5 w-3.5 text-cyan-400" />
             <span>Input (STDIN)</span>
@@ -223,11 +225,15 @@ export default function BottomPanel({
           {isRunning && onStopExecution && (
             <button
               type="button"
-              onClick={onStopExecution}
-              className="px-3 py-1 text-[12px] font-medium text-rose-300 hover:text-rose-100 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 rounded-md transition-colors cursor-pointer flex items-center gap-1 font-mono"
+              onClick={() => onTabChange?.("errors")}
+              className={`px-3 py-1 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "errors"
+                  ? "bg-[var(--bg)] text-[var(--syn-const)] shadow-sm font-semibold"
+                  : "text-[var(--syn-const)]/70 hover:text-[var(--syn-const)]"
+              }`}
             >
-              <Square className="h-3 w-3 fill-rose-400" />
-              <span>Stop</span>
+              <span>Errors</span>
+              <span className="h-2 w-2 rounded-full bg-[var(--syn-const)] ml-1" />
             </button>
           )}
 

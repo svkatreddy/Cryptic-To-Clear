@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Send, X, Bot, User, RotateCcw, AlertCircle } from "lucide-react";
+import { Sparkles, Send, X, Bot, User, RotateCcw, AlertCircle, Maximize2, Minimize2 } from "lucide-react";
 import type {
   ChatMessage,
   ErrorChatMessage,
@@ -14,6 +14,8 @@ import QuickActionsMenu from "./QuickActionsMenu";
 
 interface AIPanelProps {
   onClose?: () => void;
+  isFloating?: boolean;
+  onToggleFloating?: () => void;
   messages: ChatMessage[];
   busy: boolean;
   inputValue: string;
@@ -103,6 +105,8 @@ function AssistantTextBubble({ content }: { content: string }) {
 
 export default function AIPanel({
   onClose,
+  isFloating,
+  onToggleFloating,
   messages,
   busy,
   inputValue,
@@ -132,27 +136,51 @@ export default function AIPanel({
   return (
     <div className="flex h-full flex-col glass-strong border-l border-[var(--border)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] select-none">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)]">
             <Sparkles className="h-3.5 w-3.5 text-[#0a0d13]" />
           </span>
           <div>
-            <p className="text-[13px] font-medium leading-none">AI Assistant</p>
+            <p className="text-[13px] font-medium leading-none flex items-center gap-1.5">
+              <span>AI Explanation</span>
+              {isFloating && (
+                <span className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+                  POP-UP APP
+                </span>
+              )}
+            </p>
             <p className="text-[11px] text-[var(--ink-faint)] font-mono mt-1">
-              {busy ? "thinking…" : "ask anything about your code"}
+              {busy ? "thinking…" : isFloating ? "drag header to move pop-up" : "ask anything about your code"}
             </p>
           </div>
         </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-white/5 transition-colors md:hidden"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+
+        <div className="flex items-center gap-1">
+          {onToggleFloating && (
+            <button
+              onClick={onToggleFloating}
+              title={isFloating ? "Dock to right sidebar" : "Pop out as movable app window"}
+              className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              {isFloating ? (
+                <Minimize2 className="h-3.5 w-3.5 text-[var(--syn-keyword)]" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5 text-[var(--syn-function)]" />
+              )}
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Message list */}

@@ -35,7 +35,7 @@ export default function AboutPage() {
       {/* Core Philosophy Cards */}
       <section className="py-12 mx-auto max-w-7xl px-5 sm:px-8 w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass rounded-2xl p-8 border border-white/10 hover:border-cyan-500/30 transition-all">
+          <div className="glass rounded-2xl p-8 border border-white/10 hover:border-cyan-500/50 hover:scale-[1.03] hover:brightness-125 hover:shadow-[0_15px_35px_rgba(6,182,212,0.25)] transition-all duration-300 cursor-pointer">
             <span className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 inline-block mb-4">
               <Lightbulb className="h-6 w-6" />
             </span>
@@ -45,7 +45,7 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="glass rounded-2xl p-8 border border-white/10 hover:border-emerald-500/30 transition-all">
+          <div className="glass rounded-2xl p-8 border border-white/10 hover:border-emerald-500/50 hover:scale-[1.03] hover:brightness-125 hover:shadow-[0_15px_35px_rgba(16,185,129,0.25)] transition-all duration-300 cursor-pointer">
             <span className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 inline-block mb-4">
               <Cpu className="h-6 w-6" />
             </span>
@@ -55,7 +55,7 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="glass rounded-2xl p-8 border border-white/10 hover:border-purple-500/30 transition-all">
+          <div className="glass rounded-2xl p-8 border border-white/10 hover:border-purple-500/50 hover:scale-[1.03] hover:brightness-125 hover:shadow-[0_15px_35px_rgba(168,85,247,0.25)] transition-all duration-300 cursor-pointer">
             <span className="p-3 rounded-xl bg-purple-500/10 text-purple-400 inline-block mb-4">
               <Award className="h-6 w-6" />
             </span>
@@ -69,7 +69,7 @@ export default function AboutPage() {
 
       {/* Tech Stack Breakdown */}
       <section className="py-16 mx-auto max-w-5xl px-5 sm:px-8 w-full">
-        <div className="glass-strong rounded-3xl p-8 sm:p-12 border border-white/10">
+        <div className="glass-strong rounded-3xl p-8 sm:p-12 border border-white/10 hover:border-[var(--syn-function)]/40 hover:brightness-110 hover:shadow-[0_20px_45px_rgba(108,182,255,0.15)] transition-all duration-300">
           <div className="flex items-center gap-3 mb-6">
             <Terminal className="h-6 w-6 text-[var(--syn-function)]" />
             <h2 className="font-display text-2xl font-bold">Architecture & Tech Stack</h2>

@@ -469,7 +469,7 @@ async function executeCLocally({ sourceCode, stdin = "" }) {
       if (fs.existsSync(tmpDir)) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -611,7 +611,7 @@ async function executeCppLocally({ sourceCode, stdin = "" }) {
       if (fs.existsSync(tmpDir)) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -735,7 +735,7 @@ async function executePythonLocally({ sourceCode, stdin = "" }) {
       if (fs.existsSync(tmpDir)) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { }
   }
 }
 
