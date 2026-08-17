@@ -300,7 +300,7 @@ export default function AnalyzerModal({
         className="relative w-full max-w-4xl max-h-[90vh] flex flex-col glass-strong border border-[var(--border-strong)] rounded-2xl shadow-2xl overflow-hidden"
         role="dialog"
         aria-modal="true"
-        aria-label="LeetCode-Grade Code Quality Analysis"
+        aria-labelledby="modal-title"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0 bg-[#0d1119]/80">
@@ -310,11 +310,11 @@ export default function AnalyzerModal({
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-[14px] font-display font-bold text-[var(--ink)]">
-                  LeetCode Code Performance & Complexity Analysis
+                <p id="modal-title" className="text-[14px] font-display font-bold text-[var(--ink)]">
+                  Cryptic to Clear Code Performance & Complexity Analysis
                 </p>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  LeetCode Grade
+                  Cryptic to Clear Grade
                 </span>
               </div>
               <p className="text-[11px] font-mono text-[var(--ink-faint)] mt-0.5">{language}</p>
