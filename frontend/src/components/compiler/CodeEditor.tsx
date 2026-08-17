@@ -201,6 +201,10 @@ export default function CodeEditor({
           lineNumbers: settings.lineNumbers ? "on" : "off",
           bracketPairColorization: { enabled: settings.bracketMatching },
           matchBrackets: settings.bracketMatching ? "always" : "never",
+          guides: {
+            bracketPairs: settings.bracketMatching,
+            highlightActiveBracketPair: settings.bracketMatching,
+          },
           autoClosingBrackets: settings.bracketMatching ? "languageDefined" : "never",
           autoClosingQuotes: settings.bracketMatching ? "languageDefined" : "never",
           autoSurround: settings.bracketMatching ? "languageDefined" : "never",
