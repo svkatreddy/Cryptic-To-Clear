@@ -226,24 +226,14 @@ export default function BottomPanel({
 
               {output ? (
                 <div className="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-[var(--ink)] bg-[var(--bg)] p-3 rounded-lg border border-[var(--border)] min-h-[70px]">
-                  {output.split("\n").map((line, idx) => {
-                    const trimmed = line.trim();
-                    if (trimmed.startsWith(">")) {
-                      return (
-                        <div
-                          key={idx}
-                          className="text-[var(--syn-function)] font-bold py-0.5"
-                        >
-                          {line}
-                        </div>
-                      );
-                    }
-                    return (
+                  {output
+                    .split("\n")
+                    .filter((line) => !line.trim().startsWith(">"))
+                    .map((line, idx) => (
                       <div key={idx} className="text-[var(--ink)] py-0.5">
                         {line}
                       </div>
-                    );
-                  })}
+                    ))}
                 </div>
               ) : !errors && status === "idle" ? (
                 <div className="flex flex-col items-center justify-center py-6 text-[var(--ink-faint)] italic select-none">
