@@ -1362,9 +1362,14 @@ export default function CompilerPage() {
             className="fixed bottom-20 right-5 z-40 max-w-[280px] p-3 rounded-2xl glass-strong border border-[var(--border-strong)] shadow-2xl flex items-start gap-3 cursor-pointer hover:border-[var(--syn-keyword)] transition-colors group"
             onClick={() => {
               setShowAiAssistPrompt(false);
-              setAiOverlayOpen(true);
-              const inputElement = document.getElementById("chat-input");
-              if (inputElement) inputElement.focus();
+              setAiOverlayOpen(true); // for mobile
+              setAiPanelOpen(true);   // for desktop
+              
+              // Wait for the panel to render before focusing
+              setTimeout(() => {
+                const inputElement = document.getElementById("chat-input");
+                if (inputElement) inputElement.focus();
+              }, 100);
             }}
           >
             <div className="shrink-0 p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 text-rose-400 group-hover:text-rose-300">
