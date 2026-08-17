@@ -218,6 +218,12 @@ class FacultyModel {
         assignmentType: "coding",
         languageMode: "ANY",
         allowedLanguages: [],
+        testCases: [
+          { id: "tc_01_1", input: "5\n10 20 30 40 50", expectedOutput: "10 20 30 40 50", isHidden: false, explanation: "Revealed: Standard tree insertion" },
+          { id: "tc_01_2", input: "1\n99", expectedOutput: "99", isHidden: false, explanation: "Revealed: Single node tree" },
+          { id: "tc_01_3", input: "0", expectedOutput: "Empty Tree", isHidden: true, explanation: "Hidden: Empty root tree edge case" },
+          { id: "tc_01_4", input: "7\n45 12 78 3 24 67 91", expectedOutput: "3 12 24 45 67 78 91", isHidden: true, explanation: "Hidden: Unbalanced multi-branch BST" },
+        ],
         points: 100,
         difficulty: "medium",
         startDate: "2026-08-01T00:00:00Z",
@@ -239,6 +245,11 @@ class FacultyModel {
         assignmentType: "coding",
         languageMode: "RESTRICTED",
         allowedLanguages: ["java", "cpp"],
+        testCases: [
+          { id: "tc_02_1", input: "VISA 4111111111111111 250.00", expectedOutput: "Approved: $250.00", isHidden: false, explanation: "Revealed: Valid Visa Transaction" },
+          { id: "tc_02_2", input: "AMEX 1234 10.00", expectedOutput: "PaymentException: Invalid Card Number", isHidden: false, explanation: "Revealed: Invalid Card Length" },
+          { id: "tc_02_3", input: "MASTER 5500000000000004 0.00", expectedOutput: "PaymentException: Invalid Amount", isHidden: true, explanation: "Hidden: Zero Amount Edge Case" },
+        ],
         points: 100,
         difficulty: "hard",
         startDate: "2026-08-05T00:00:00Z",
@@ -260,6 +271,10 @@ class FacultyModel {
         assignmentType: "coding",
         languageMode: "RESTRICTED",
         allowedLanguages: ["c", "cpp"],
+        testCases: [
+          { id: "tc_03_1", input: "2 2\n1 2\n3 4\n2 2\n5 6\n7 8", expectedOutput: "19 22\n43 50", isHidden: false, explanation: "Revealed: 2x2 Matrix Multiplication" },
+          { id: "tc_03_2", input: "1 3\n2 3 4\n3 1\n1\n2\n3", expectedOutput: "20", isHidden: true, explanation: "Hidden: Row and Column Vector Dot Product" },
+        ],
         points: 50,
         difficulty: "medium",
         startDate: "2026-08-02T00:00:00Z",
@@ -513,6 +528,7 @@ class FacultyModel {
         }
       }
       if (!asg.allowedLanguages) asg.allowedLanguages = [];
+      if (!asg.testCases || !Array.isArray(asg.testCases)) asg.testCases = [];
       if (!asg.points) asg.points = 100;
       if (!asg.assignmentType) asg.assignmentType = "coding";
       if (!asg.difficulty) asg.difficulty = "medium";
@@ -540,6 +556,16 @@ class FacultyModel {
       ? data.allowedLanguages.map((l) => l.toLowerCase().trim())
       : [];
 
+    const testCases = Array.isArray(data.testCases)
+      ? data.testCases.map((tc, idx) => ({
+          id: tc.id || `tc_${id}_${idx + 1}`,
+          input: tc.input || "",
+          expectedOutput: tc.expectedOutput || "",
+          isHidden: !!tc.isHidden,
+          explanation: tc.explanation || (tc.isHidden ? "Hidden Test Case" : "Revealed Test Case"),
+        }))
+      : [];
+
     const newAsg = {
       id,
       facultyId: "usr_faculty_demo",
@@ -551,6 +577,7 @@ class FacultyModel {
       assignmentType: data.assignmentType || "coding",
       languageMode,
       allowedLanguages,
+      testCases,
       points: Number(data.points) || 100,
       difficulty: data.difficulty || "medium",
       startDate: data.startDate || new Date().toISOString(),
@@ -584,6 +611,16 @@ class FacultyModel {
     }
     if (data.allowedLanguages !== undefined && Array.isArray(data.allowedLanguages)) {
       asg.allowedLanguages = data.allowedLanguages.map((l) => l.toLowerCase().trim());
+    }
+
+    if (Array.isArray(data.testCases)) {
+      asg.testCases = data.testCases.map((tc, idx) => ({
+        id: tc.id || `tc_${id}_${idx + 1}`,
+        input: tc.input || "",
+        expectedOutput: tc.expectedOutput || "",
+        isHidden: !!tc.isHidden,
+        explanation: tc.explanation || (tc.isHidden ? "Hidden Test Case" : "Revealed Test Case"),
+      }));
     }
 
     if (data.classId && data.classId !== asg.classId) {

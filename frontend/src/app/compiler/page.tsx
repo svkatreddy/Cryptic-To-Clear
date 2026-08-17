@@ -817,10 +817,6 @@ export default function CompilerPage() {
     setExecutionTime(formatTime(result.time));
     setMemoryUsage(formatMemory(result.memory));
 
-    if (result.compileError) {
-      void triggerAIExplain(result.compileError, language, code);
-    }
-
     if (errorText) {
       setBottomTab("errors");
       setStatus("error");
@@ -829,7 +825,7 @@ export default function CompilerPage() {
       setStatus("success");
     }
     setIsRunning(false);
-  }, [currentLang, language, code, input, triggerAIExplain]);
+  }, [currentLang, language, code, input]);
 
   const handleSubmitTerminalInput = useCallback(
     async (inputValueLine: string) => {
@@ -928,7 +924,6 @@ export default function CompilerPage() {
     if (result.compileError) {
       setErrors(`Compilation Error:\n${result.compileError}`);
       setStatus("error");
-      void triggerAIExplain(result.compileError, language, code);
     } else if (result.languageType === "interpreted") {
       setErrors(
         `${currentLang.label} has no separate compile step — the interpreter checked your code while running it.\n\n0 errors, 0 warnings.`
@@ -939,7 +934,7 @@ export default function CompilerPage() {
       setStatus("success");
     }
     setIsCompiling(false);
-  }, [currentLang, language, code, input, triggerAIExplain]);
+  }, [currentLang, language, code, input]);
 
   const handleClear = () => {
     setCodeMap((m) => ({ ...m, [language]: "" }));
@@ -1124,8 +1119,8 @@ export default function CompilerPage() {
       }
     };
 
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [
     shortcutsOpen,
     diffTarget,
@@ -1239,6 +1234,7 @@ export default function CompilerPage() {
                 onChange={handleCodeChange}
                 settings={settings}
                 highlightLines={highlightLines}
+                disableCopyPaste={!!activeAssignment}
                 currentLine={
                   debuggerOpen &&
                     debugStatus === "success" &&
@@ -1266,6 +1262,13 @@ export default function CompilerPage() {
                 onInputChange={setInput}
                 activeTab={bottomTab}
                 onTabChange={setBottomTab}
+                executionTime={executionTime}
+                memoryUsage={memoryUsage}
+                onTriggerAiExplain={() => {
+                  if (errors) {
+                    void triggerAIExplain(errors, language, code);
+                  }
+                }}
                 onResizeStart={(e) => {
                   e.preventDefault();
                   resizing.current = true;

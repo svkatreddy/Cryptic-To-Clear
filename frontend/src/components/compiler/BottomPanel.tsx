@@ -1,7 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { GripHorizontal, CornerDownLeft } from "lucide-react";
+import { useRef, useEffect } from "react";
+import {
+  GripHorizontal,
+  Terminal,
+  FileText,
+  AlertCircle,
+  Trash2,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  HardDrive,
+} from "lucide-react";
 
 export type BottomTab = "output" | "stdin" | "errors";
 
@@ -17,6 +28,9 @@ interface BottomPanelProps {
   onInputChange?: (val: string) => void;
   activeTab?: BottomTab;
   onTabChange?: (tab: BottomTab) => void;
+  executionTime?: string;
+  memoryUsage?: string;
+  onTriggerAiExplain?: () => void;
 }
 
 export default function BottomPanel({
@@ -24,211 +38,273 @@ export default function BottomPanel({
   errors,
   status,
   onResizeStart,
-  onSubmitInput,
   onClearOutput,
   isRunning = false,
   input = "",
   onInputChange,
   activeTab = "output",
   onTabChange,
+  executionTime = "—",
+  memoryUsage = "—",
+  onTriggerAiExplain,
 }: BottomPanelProps) {
-  const [terminalPrompt, setTerminalPrompt] = useState("");
   const terminalEndRef = useRef<HTMLDivElement>(null);
-  const promptInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll output to bottom and focus input prompt when output or errors change
+  const hasExecutionResult =
+    status !== "idle" || output.length > 0 || errors.length > 0;
+
+  // Keep the latest output visible
   useEffect(() => {
-    if (status !== "idle" && activeTab === "output") {
-      terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      promptInputRef.current?.focus();
+    if (hasExecutionResult) {
+      terminalEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
     }
-  }, [output, errors, status, activeTab]);
+  }, [output, errors, status, hasExecutionResult]);
 
-  const handleSendPrompt = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!terminalPrompt.trim()) return;
-    const valueToSend = terminalPrompt;
-    setTerminalPrompt("");
-    if (onSubmitInput) {
-      onSubmitInput(valueToSend);
-    }
-    setTimeout(() => {
-      promptInputRef.current?.focus();
-    }, 50);
-  };
-
-  const isExecutionActive = status !== "idle" || output.length > 0 || errors.length > 0;
+  const currentTab = activeTab || (errors ? "errors" : "output");
 
   return (
-    <div className="flex h-full flex-col border-t border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--ink)] font-sans">
+    <div className="flex h-full flex-col border-t border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--ink)] font-sans select-none">
       {/* Drag handle */}
       <div
         onMouseDown={onResizeStart}
-        className="h-2 w-full flex items-center justify-center cursor-row-resize group shrink-0 -mt-1 hover:bg-[var(--border)] transition-colors"
+        className="h-2 w-full flex items-center justify-center cursor-row-resize group shrink-0 hover:bg-[var(--border)] transition-colors"
       >
-        <GripHorizontal className="h-3 w-8 text-[var(--ink-faint)] group-hover:text-[var(--ink-dim)] transition-colors" />
+        <GripHorizontal className="h-2 w-8 text-[var(--ink-faint)] group-hover:text-[var(--ink-dim)] transition-colors" />
       </div>
 
-      {/* Programiz Header Bar with Tabs */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border)] shrink-0 bg-[var(--panel)]">
-        <div className="flex items-center gap-1.5">
+      {/* Terminal Header & Navigation Tabs */}
+      <div className="h-10 flex items-center justify-between px-3 border-b border-[var(--border)] shrink-0 bg-[var(--panel)]">
+        {/* Tab selection buttons */}
+        <div className="flex items-center gap-1">
           <button
-            type="button"
             onClick={() => onTabChange?.("output")}
-            className={`px-3 py-1 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "output"
-                ? "bg-[var(--bg)] text-[var(--ink)] shadow-sm font-semibold"
-                : "text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-mono transition-all cursor-pointer ${
+              currentTab === "output"
+                ? "bg-[var(--bg)] text-[var(--ink)] font-bold shadow-sm border border-[var(--border)]"
+                : "text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-white/5"
             }`}
           >
+            <Terminal className="h-3.5 w-3.5 text-emerald-400" />
             <span>Output</span>
-            {status === "running" && (
-              <span className="h-2 w-2 rounded-full bg-[var(--syn-const)] animate-ping ml-1" />
+            {output && (
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             )}
           </button>
 
           <button
-            type="button"
             onClick={() => onTabChange?.("stdin")}
-            className={`px-3 py-1 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "stdin"
-                ? "bg-[var(--bg)] text-[var(--ink)] shadow-sm font-semibold"
-                : "text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-mono transition-all cursor-pointer ${
+              currentTab === "stdin"
+                ? "bg-[var(--bg)] text-[var(--ink)] font-bold shadow-sm border border-[var(--border)]"
+                : "text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-white/5"
             }`}
           >
-            <span>Input (STDIN)</span>
-            {input && input.trim().length > 0 && (
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--syn-function)] ml-1" />
+            <FileText className="h-3.5 w-3.5 text-purple-400" />
+            <span>STDIN Input</span>
+            {input.trim() && (
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
             )}
           </button>
 
-          {errors && (
-            <button
-              type="button"
-              onClick={() => onTabChange?.("errors")}
-              className={`px-3 py-1 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "errors"
-                  ? "bg-[var(--bg)] text-[var(--syn-const)] shadow-sm font-semibold"
-                  : "text-[var(--syn-const)]/70 hover:text-[var(--syn-const)]"
+          <button
+            onClick={() => onTabChange?.("errors")}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-mono transition-all cursor-pointer ${
+              currentTab === "errors"
+                ? "bg-[var(--bg)] text-[var(--ink)] font-bold shadow-sm border border-[var(--border)]"
+                : "text-[var(--ink-dim)] hover:text-[var(--ink)] hover:bg-white/5"
+            }`}
+          >
+            <AlertCircle
+              className={`h-3.5 w-3.5 ${
+                errors ? "text-rose-400" : "text-gray-400"
               }`}
-            >
-              <span>Errors</span>
-              <span className="h-2 w-2 rounded-full bg-[var(--syn-const)] ml-1" />
-            </button>
-          )}
+            />
+            <span>Errors & Logs</span>
+            {errors && (
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                1
+              </span>
+            )}
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={onClearOutput}
-          className="px-3 py-1 text-[12px] font-medium text-[var(--ink-dim)] hover:text-[var(--ink)] glass border border-[var(--border)] rounded-md transition-colors cursor-pointer"
-        >
-          Clear
-        </button>
+        {/* Header Right Status Metrics & Action Controls */}
+        <div className="flex items-center gap-3">
+          {/* Execution Time & Memory Stats */}
+          {hasExecutionResult && !isRunning && (
+            <div className="hidden sm:flex items-center gap-2.5 text-[11px] font-mono text-[var(--ink-dim)] border-r border-[var(--border)] pr-3">
+              <span className="flex items-center gap-1" title="Execution Time">
+                <Clock className="h-3 w-3 text-cyan-400" />
+                {executionTime}
+              </span>
+              <span className="flex items-center gap-1" title="Memory Used">
+                <HardDrive className="h-3 w-3 text-indigo-400" />
+                {memoryUsage}
+              </span>
+            </div>
+          )}
+
+          {/* Running status badge */}
+          {isRunning ? (
+            <span className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+              Executing...
+            </span>
+          ) : status === "success" ? (
+            <span className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+              <CheckCircle2 className="h-3 w-3" />
+              Exit Code 0
+            </span>
+          ) : status === "error" ? (
+            <span className="flex items-center gap-1 text-[11px] font-mono text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+              <XCircle className="h-3 w-3" />
+              Exit Code 1
+            </span>
+          ) : null}
+
+          {/* Clear button */}
+          <button
+            type="button"
+            onClick={onClearOutput}
+            title="Clear output terminal"
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono text-[var(--ink-dim)] hover:text-[var(--ink)] glass border border-[var(--border)] rounded-md transition-colors cursor-pointer"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>Clear</span>
+          </button>
+        </div>
       </div>
 
-      {/* Tab Panels */}
-      {activeTab === "stdin" ? (
-        <div className="flex-1 p-3 bg-[var(--bg)] flex flex-col font-mono text-[13px]">
-          <textarea
-            value={input}
-            onChange={(e) => onInputChange?.(e.target.value)}
-            placeholder="Type standard input (STDIN) here before running your program..."
-            className="w-full flex-1 bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-faint)] border border-[var(--border)] rounded-lg p-3 font-mono text-[13px] outline-none focus:border-[var(--syn-function)] transition-colors resize-none"
-          />
-        </div>
-      ) : activeTab === "errors" ? (
-        <div className="flex-1 p-4 font-mono text-[13px] bg-[var(--bg)] overflow-y-auto select-text">
-          <pre className="whitespace-pre-wrap text-[var(--syn-const)] leading-relaxed">
-            {errors}
-          </pre>
-        </div>
-      ) : (
-        /* Output Tab View */
-        <div
-          onClick={() => {
-            if (isExecutionActive) promptInputRef.current?.focus();
-          }}
-          className="flex-1 p-4 font-mono text-[13px] bg-[var(--bg)] overflow-y-auto cursor-text flex flex-col selection:bg-blue-500/30 select-text"
-        >
-          {/* Errors (if any) */}
-          {errors && (
-            <pre className="whitespace-pre-wrap text-[var(--syn-const)] font-mono text-[13px] leading-relaxed mb-2">
-              {errors}
-            </pre>
-          )}
-
-          {/* Stdout Output & Input lines */}
-          {output ? (
-            <div className="font-mono text-[13px] leading-relaxed whitespace-pre-wrap">
-              {output.split("\n").map((line, idx) => {
-                const trimmed = line.trim();
-                if (trimmed.startsWith(">")) {
+      {/* Terminal View Content Area */}
+      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--bg)] p-4 font-mono text-[13px] leading-relaxed select-text">
+        {/* TAB 1: OUTPUT */}
+        {currentTab === "output" && (
+          <div className="space-y-4">
+            {output ? (
+              <div className="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-[var(--ink)]">
+                {output.split("\n").map((line, idx) => {
+                  const trimmed = line.trim();
+                  if (trimmed.startsWith(">")) {
+                    return (
+                      <div
+                        key={idx}
+                        className="text-[var(--syn-function)] font-bold py-0.5"
+                      >
+                        {line}
+                      </div>
+                    );
+                  }
                   return (
-                    <div key={idx} className="text-[var(--syn-function)] font-bold">
+                    <div key={idx} className="text-[var(--ink)] py-0.5">
                       {line}
                     </div>
                   );
-                }
-
-                const promptMatch = line.match(/^(.+?[:?=>$]\s*)(\S+.*)$/);
-                const isPromptText = promptMatch && /^(enter|input|type|please|what|how|select|choose)\b|[:?=>$]$/i.test(promptMatch[1].trim());
-                const isResultHeader = promptMatch && /^(name|age|cgpa|score|result|output|total|sum|diff|product|count):/i.test(promptMatch[1].trim());
-
-                if (promptMatch && isPromptText && !isResultHeader) {
-                  return (
-                    <div key={idx} className="text-[var(--ink)]">
-                      <span>{promptMatch[1]}</span>
-                      <span className="text-[var(--syn-function)] font-bold">{promptMatch[2]}</span>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div key={idx} className="text-[var(--ink)]">
-                    {line}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            status === "idle" && (
-              <div className="text-[var(--ink-faint)] italic select-none">
-                Output will appear here after execution...
+                })}
               </div>
-            )
-          )}
+            ) : !errors && status === "idle" ? (
+              <div className="flex flex-col items-center justify-center py-10 text-[var(--ink-faint)] italic select-none">
+                <Terminal className="h-8 w-8 mb-2 opacity-30" />
+                <p>Program output will appear here after execution...</p>
+              </div>
+            ) : errors ? (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+                <p className="font-bold mb-1">Execution completed with errors.</p>
+                <p className="text-[var(--ink-dim)]">
+                  Check the <strong className="text-rose-400">Errors & Logs</strong> tab for details.
+                </p>
+              </div>
+            ) : null}
 
-          {/* Terminal Input Prompt */}
-          {isExecutionActive && (
-            <form
-              onSubmit={handleSendPrompt}
-              className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--border)] shrink-0 font-mono"
-            >
-              <span className="text-[var(--syn-string)] font-bold text-[13px] shrink-0">$</span>
-              <input
-                ref={promptInputRef}
-                type="text"
-                value={terminalPrompt}
-                onChange={(e) => setTerminalPrompt(e.target.value)}
-                disabled={isRunning}
-                placeholder={isRunning ? "Executing..." : "Enter input..."}
-                className="flex-1 bg-transparent text-[var(--ink)] font-mono text-[13px] placeholder:text-[var(--ink-faint)] border-none outline-none focus:ring-0 p-0 disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={isRunning || !terminalPrompt.trim()}
-                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono rounded bg-[var(--syn-string)]/20 hover:bg-[var(--syn-string)]/30 text-[var(--syn-string)] border border-[var(--syn-string)]/30 transition-colors disabled:opacity-40 cursor-pointer shrink-0"
-              >
-                <span>Enter</span>
-                <CornerDownLeft className="h-3 w-3 text-[var(--syn-string)]" />
-              </button>
-            </form>
-          )}
+            {/* Termination Banner */}
+            {hasExecutionResult && !isRunning && (
+              <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--ink-dim)]">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={
+                      status === "success"
+                        ? "h-2 w-2 rounded-full bg-emerald-400"
+                        : "h-2 w-2 rounded-full bg-rose-400"
+                    }
+                  />
+                  <span>
+                    {status === "success"
+                      ? "Process terminated cleanly (Exit Code 0)."
+                      : "Process terminated with error status (Exit Code 1)."}
+                  </span>
+                </div>
+                <span>
+                  Runtime: {executionTime} | Memory: {memoryUsage}
+                </span>
+              </div>
+            )}
+            <div ref={terminalEndRef} />
+          </div>
+        )}
 
-          <div ref={terminalEndRef} />
-        </div>
-      )}
+        {/* TAB 2: STDIN INPUT */}
+        {currentTab === "stdin" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] font-semibold text-[var(--ink-dim)] uppercase tracking-wide flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-purple-400" />
+                Standard Input (STDIN)
+              </label>
+              <span className="text-[11px] text-[var(--ink-faint)]">
+                Provide inputs line-by-line before running
+              </span>
+            </div>
+
+            <textarea
+              value={input}
+              onChange={(e) => onInputChange?.(e.target.value)}
+              disabled={isRunning}
+              placeholder="e.g. 5&#10;10 20 30"
+              spellCheck={false}
+              className="w-full min-h-[140px] resize-y rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 text-[13px] font-mono text-[var(--ink)] placeholder:text-[var(--ink-faint)] outline-none transition-all focus:border-[var(--syn-function)] focus:ring-1 focus:ring-[var(--syn-function)] disabled:opacity-60 disabled:cursor-not-allowed"
+            />
+          </div>
+        )}
+
+        {/* TAB 3: ERRORS & COMPILER LOGS */}
+        {currentTab === "errors" && (
+          <div className="space-y-4">
+            {errors ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                  <div className="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Compiler / Runtime Diagnostics</span>
+                  </div>
+
+                  {/* Explicit AI Explanation Button (Item 3 Pedagogical Fix) */}
+                  {onTriggerAiExplain && (
+                    <button
+                      onClick={onTriggerAiExplain}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Ask AI to Explain & Fix</span>
+                    </button>
+                  )}
+                </div>
+
+                <pre className="whitespace-pre-wrap text-rose-300 bg-[var(--bg-elevated)] p-4 rounded-xl border border-rose-500/20 leading-relaxed overflow-x-auto text-[12.5px]">
+                  {errors}
+                </pre>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-[var(--ink-faint)] italic select-none">
+                <CheckCircle2 className="h-8 w-8 mb-2 text-emerald-400 opacity-40" />
+                <p>No compilation or runtime errors reported.</p>
+              </div>
+            )}
+            <div ref={terminalEndRef} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

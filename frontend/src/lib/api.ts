@@ -146,12 +146,32 @@ export interface NamingSuggestion {
   reason: string;
 }
 
+export interface EdgeCaseResult {
+  caseName: string;
+  handled: boolean;
+  note: string;
+}
+
+export interface OptimalSolutionComparison {
+  isOptimal: boolean;
+  theoreticalOptimalTime: string;
+  suggestion: string;
+}
+
 export interface CodeAnalysis {
   readabilityScore: number;
   maintainabilityScore: number;
   summary: string;
+  timeComplexity?: string;
+  timePercentile?: number;
+  timeExplanation?: string;
+  spaceComplexity?: string;
+  spacePercentile?: number;
+  spaceExplanation?: string;
   performanceSuggestions: PerformanceSuggestion[];
   securityIssues: SecurityIssue[];
+  edgeCases?: EdgeCaseResult[];
+  optimalComparison?: OptimalSolutionComparison;
   unusedVariables: string[];
   duplicateCode: string[];
   deadCode: string[];
@@ -837,6 +857,14 @@ export interface ClassSection {
   studentCount: number;
 }
 
+export interface TestCase {
+  id?: string;
+  input: string;
+  expectedOutput: string;
+  isHidden: boolean;
+  explanation?: string;
+}
+
 export interface SubmissionRecord {
   id: string;
   assignmentId: string;
@@ -864,6 +892,7 @@ export interface AssignmentItem {
   assignmentType?: string;
   languageMode: "ANY" | "RESTRICTED";
   allowedLanguages: string[];
+  testCases?: TestCase[];
   points?: number;
   difficulty?: "easy" | "medium" | "hard";
   startDate?: string;

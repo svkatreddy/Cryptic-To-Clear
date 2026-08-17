@@ -62,6 +62,14 @@ export default function AssignmentsTab() {
   const [languageMode, setLanguageMode] = useState<"ANY" | "RESTRICTED">("ANY");
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["c", "cpp", "java", "python"]);
 
+  // Test Cases State (Item 7 Requirement)
+  const [testCases, setTestCases] = useState<
+    Array<{ id?: string; input: string; expectedOutput: string; isHidden: boolean; explanation?: string }>
+  >([
+    { input: "5\n10 20 30 40 50", expectedOutput: "10 20 30 40 50", isHidden: false, explanation: "Standard array elements" },
+    { input: "0", expectedOutput: "Empty", isHidden: true, explanation: "Zero input edge case" },
+  ]);
+
   // Confirmation dialog state for editing language restrictions when submissions exist
   const [showConfirmEditWarning, setShowConfirmEditWarning] = useState(false);
 
@@ -97,6 +105,10 @@ export default function AssignmentsTab() {
     setMaxAttempts(5);
     setLanguageMode("ANY");
     setSelectedLanguages(["c", "cpp", "java", "python"]);
+    setTestCases([
+      { input: "5\n10 20 30 40 50", expectedOutput: "10 20 30 40 50", isHidden: false, explanation: "Standard array elements" },
+      { input: "0", expectedOutput: "Empty", isHidden: true, explanation: "Zero input edge case" },
+    ]);
     setError(null);
     setShowConfirmEditWarning(false);
     setShowCreateModal(true);
@@ -114,6 +126,14 @@ export default function AssignmentsTab() {
     setMaxAttempts(asg.maxAttempts || 5);
     setLanguageMode(asg.languageMode || "ANY");
     setSelectedLanguages(asg.allowedLanguages && asg.allowedLanguages.length > 0 ? asg.allowedLanguages : ["c", "cpp", "java", "python"]);
+    setTestCases(
+      asg.testCases && asg.testCases.length > 0
+        ? asg.testCases
+        : [
+            { input: "5\n10 20 30 40 50", expectedOutput: "10 20 30 40 50", isHidden: false },
+            { input: "0", expectedOutput: "Empty", isHidden: true },
+          ]
+    );
     setError(null);
     setShowConfirmEditWarning(false);
     setShowCreateModal(true);
@@ -174,6 +194,7 @@ export default function AssignmentsTab() {
       classId: classId || (classes[0] ? classes[0].id : "cls_cs3a"),
       languageMode,
       allowedLanguages: languageMode === "RESTRICTED" ? selectedLanguages : [],
+      testCases,
       points,
       difficulty,
       maxAttempts,
@@ -519,6 +540,110 @@ export default function AssignmentsTab() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Requirement 7: Test Cases Manager (Revealed & Hidden) */}
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-[var(--border-strong)] space-y-3 font-mono">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-[var(--ink)] flex items-center gap-1.5">
+                    <CheckSquare className="w-4 h-4 text-emerald-400" />
+                    <span>Test Cases (Revealed & Hidden)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTestCases([
+                        ...testCases,
+                        { input: "", expectedOutput: "", isHidden: false },
+                      ])
+                    }
+                    className="flex items-center gap-1 text-[11px] text-[var(--syn-keyword)] hover:underline cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Test Case</span>
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-[var(--ink-dim)] leading-relaxed font-sans">
+                  Hidden test cases evaluate code logical correctness without revealing inputs/outputs to students.
+                </p>
+
+                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                  {testCases.map((tc, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-xl border space-y-2 relative transition-all ${
+                        tc.isHidden
+                          ? "bg-purple-500/10 border-purple-500/30"
+                          : "bg-emerald-500/10 border-emerald-500/30"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[var(--ink)]">
+                          Test Case #{idx + 1}
+                        </span>
+
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-1.5 text-[10px] font-bold cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={tc.isHidden}
+                              onChange={(e) => {
+                                const next = [...testCases];
+                                next[idx].isHidden = e.target.checked;
+                                setTestCases(next);
+                              }}
+                              className="accent-purple-500"
+                            />
+                            <span className={tc.isHidden ? "text-purple-300" : "text-emerald-300"}>
+                              {tc.isHidden ? "🔒 Hidden" : "👁️ Revealed"}
+                            </span>
+                          </label>
+
+                          {testCases.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setTestCases(testCases.filter((_, i) => i !== idx))}
+                              className="text-rose-400 text-xs hover:underline cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                          <label className="block text-[var(--ink-dim)] text-[10px]">STDIN Input</label>
+                          <textarea
+                            value={tc.input}
+                            onChange={(e) => {
+                              const next = [...testCases];
+                              next[idx].input = e.target.value;
+                              setTestCases(next);
+                            }}
+                            placeholder="Input value..."
+                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg p-1.5 text-[var(--ink)] h-14 resize-none font-mono text-[11px]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[var(--ink-dim)] text-[10px]">Expected Output</label>
+                          <textarea
+                            value={tc.expectedOutput}
+                            onChange={(e) => {
+                              const next = [...testCases];
+                              next[idx].expectedOutput = e.target.value;
+                              setTestCases(next);
+                            }}
+                            placeholder="Expected output..."
+                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg p-1.5 text-[var(--ink)] h-14 resize-none font-mono text-[11px]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Optional Metadata Grid */}

@@ -26,6 +26,8 @@ interface CodeEditorProps {
   highlightLines?: number[];
   /** The Visual Debugger's currently-executing line, or null when not debugging. */
   currentLine?: number | null;
+  /** Prevent copying, cutting, pasting, and context menu during assignment mode (Item 7) */
+  disableCopyPaste?: boolean;
 }
 
 export default function CodeEditor({
@@ -35,6 +37,7 @@ export default function CodeEditor({
   settings,
   highlightLines,
   currentLine,
+  disableCopyPaste = false,
 }: CodeEditorProps) {
   const editorRef = useRef<MonacoEditorInstance | null>(null);
   const decorationsRef = useRef<DecorationsCollection | null>(null);
@@ -42,12 +45,62 @@ export default function CodeEditor({
 
   const handleMount: OnMount = (editor) => {
     editorRef.current = editor;
-    editor.updateOptions({ tabSize: 2, glyphMargin: true });
+    editor.updateOptions({
+      tabSize: 2,
+      glyphMargin: true,
+      matchBrackets: settings.bracketMatching ? "always" : "never",
+      bracketPairColorization: { enabled: settings.bracketMatching },
+      autoClosingBrackets: settings.bracketMatching ? "always" : "never",
+      autoClosingQuotes: settings.bracketMatching ? "always" : "never",
+    });
     editor.focus();
   };
 
-  // Apply/clear the "changed lines" decorations whenever the highlighted set
-  // changes (e.g. right after "Apply AI Fix", or cleared on "Undo Fix").
+  // Dynamically update Monaco options whenever settings change (Fixes Item 4)
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.updateOptions({
+      fontSize: settings.fontSize,
+      wordWrap: settings.wordWrap ? "on" : "off",
+      minimap: { enabled: settings.minimap },
+      lineNumbers: settings.lineNumbers ? "on" : "off",
+      matchBrackets: settings.bracketMatching ? "always" : "never",
+      bracketPairColorization: { enabled: settings.bracketMatching },
+      autoClosingBrackets: settings.bracketMatching ? "always" : "never",
+      autoClosingQuotes: settings.bracketMatching ? "always" : "never",
+    });
+  }, [settings]);
+
+  // Disable copy/cut/paste during Assignment mode (Item 7 requirement)
+  useEffect(() => {
+    if (!disableCopyPaste) return;
+
+    const preventAction = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const container = document.getElementById("monaco-editor-container");
+    if (container) {
+      container.addEventListener("copy", preventAction, true);
+      container.addEventListener("cut", preventAction, true);
+      container.addEventListener("paste", preventAction, true);
+      container.addEventListener("contextmenu", preventAction, true);
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener("copy", preventAction, true);
+        container.removeEventListener("cut", preventAction, true);
+        container.removeEventListener("paste", preventAction, true);
+        container.removeEventListener("contextmenu", preventAction, true);
+      }
+    };
+  }, [disableCopyPaste]);
+
+  // Apply/clear the "changed lines" decorations whenever the highlighted set changes
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -77,8 +130,7 @@ export default function CodeEditor({
     );
   }, [highlightLines]);
 
-  // Visual Debugger: highlight the currently-executing line and scroll it
-  // into view, VS Code debugger style.
+  // Visual Debugger: highlight current executing line
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -109,72 +161,82 @@ export default function CodeEditor({
   }, [currentLine]);
 
   return (
-    <Editor
-      language={language}
-      value={value}
-      theme={settings.theme === "vs-dark" ? "codementor-dark" : "codementor-light"}
-      onChange={(v) => onChange(v ?? "")}
-      onMount={handleMount}
-      beforeMount={(monaco) => {
-        monaco.editor.defineTheme("codementor-dark", {
-          base: "vs-dark",
-          inherit: true,
-          rules: [],
-          colors: {
-            "editor.background": "#0d1119",
-            "editor.lineHighlightBackground": "#161b26",
-            "editorGutter.background": "#0d1119",
-            "editorLineNumber.foreground": "#3a4356",
-            "editorLineNumber.activeForeground": "#8993a4",
-          },
-        });
-        monaco.editor.defineTheme("codementor-light", {
-          base: "vs",
-          inherit: true,
-          rules: [],
-          colors: {
-            "editor.background": "#ffffff",
-            "editor.lineHighlightBackground": "#f0f4f9",
-            "editorGutter.background": "#ffffff",
-            "editorLineNumber.foreground": "#94a3b8",
-            "editorLineNumber.activeForeground": "#334155",
-          },
-        });
-      }}
-      options={{
-        fontSize: settings.fontSize,
-        wordWrap: settings.wordWrap ? "on" : "off",
-        minimap: { enabled: settings.minimap },
-        lineNumbers: settings.lineNumbers ? "on" : "off",
-        bracketPairColorization: { enabled: settings.bracketMatching },
-        matchBrackets: settings.bracketMatching ? "always" : "never",
-        fontFamily:
-          "var(--font-mono), 'JetBrains Mono', ui-monospace, monospace",
-        fontLigatures: true,
-        smoothScrolling: true,
-        cursorBlinking: "smooth",
-        padding: { top: 16 },
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        renderLineHighlight: "all",
-        roundedSelection: true,
-        glyphMargin: true,
-        tabSize: 2,
-      }}
-      loading={
-        <div className="flex h-full w-full flex-col gap-2 bg-[var(--bg)] p-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-3 rounded animate-pulse bg-white/5"
-              style={{
-                width: `${[85, 60, 92, 40, 70, 55, 80, 45, 65, 50][i % 10]}%`,
-                animationDelay: `${i * 60}ms`,
-              }}
-            />
-          ))}
+    <div id="monaco-editor-container" className="h-full w-full relative">
+      <Editor
+        language={language}
+        value={value}
+        theme={settings.theme === "vs-dark" ? "codementor-dark" : "codementor-light"}
+        onChange={(v) => onChange(v ?? "")}
+        onMount={handleMount}
+        beforeMount={(monaco) => {
+          monaco.editor.defineTheme("codementor-dark", {
+            base: "vs-dark",
+            inherit: true,
+            rules: [],
+            colors: {
+              "editor.background": "#0d1119",
+              "editor.lineHighlightBackground": "#161b26",
+              "editorGutter.background": "#0d1119",
+              "editorLineNumber.foreground": "#3a4356",
+              "editorLineNumber.activeForeground": "#8993a4",
+            },
+          });
+          monaco.editor.defineTheme("codementor-light", {
+            base: "vs",
+            inherit: true,
+            rules: [],
+            colors: {
+              "editor.background": "#ffffff",
+              "editor.lineHighlightBackground": "#f0f4f9",
+              "editorGutter.background": "#ffffff",
+              "editorLineNumber.foreground": "#94a3b8",
+              "editorLineNumber.activeForeground": "#334155",
+            },
+          });
+        }}
+        options={{
+          fontSize: settings.fontSize,
+          wordWrap: settings.wordWrap ? "on" : "off",
+          minimap: { enabled: settings.minimap },
+          lineNumbers: settings.lineNumbers ? "on" : "off",
+          bracketPairColorization: { enabled: settings.bracketMatching },
+          matchBrackets: settings.bracketMatching ? "always" : "never",
+          autoClosingBrackets: settings.bracketMatching ? "always" : "never",
+          autoClosingQuotes: settings.bracketMatching ? "always" : "never",
+          fontFamily:
+            "var(--font-mono), 'JetBrains Mono', ui-monospace, monospace",
+          fontLigatures: true,
+          smoothScrolling: true,
+          cursorBlinking: "smooth",
+          padding: { top: 16 },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          renderLineHighlight: "all",
+          roundedSelection: true,
+          glyphMargin: true,
+          tabSize: 2,
+        }}
+        loading={
+          <div className="flex h-full w-full flex-col gap-2 bg-[var(--bg)] p-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-3 rounded animate-pulse bg-white/5"
+                style={{
+                  width: `${[85, 60, 92, 40, 70, 55, 80, 45, 65, 50][i % 10]}%`,
+                  animationDelay: `${i * 60}ms`,
+                }}
+              />
+            ))}
+          </div>
+        }
+      />
+
+      {disableCopyPaste && (
+        <div className="absolute top-2 right-4 z-20 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono select-none pointer-events-none shadow-md backdrop-blur-sm">
+          🔒 Copy/Paste Disabled in Assignment Mode
         </div>
-      }
-    />
+      )}
+    </div>
   );
 }
