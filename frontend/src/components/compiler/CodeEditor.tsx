@@ -201,8 +201,9 @@ export default function CodeEditor({
           lineNumbers: settings.lineNumbers ? "on" : "off",
           bracketPairColorization: { enabled: settings.bracketMatching },
           matchBrackets: settings.bracketMatching ? "always" : "never",
-          autoClosingBrackets: settings.bracketMatching ? "always" : "never",
-          autoClosingQuotes: settings.bracketMatching ? "always" : "never",
+          autoClosingBrackets: settings.bracketMatching ? "languageDefined" : "never",
+          autoClosingQuotes: settings.bracketMatching ? "languageDefined" : "never",
+          autoSurround: settings.bracketMatching ? "languageDefined" : "never",
           fontFamily:
             "var(--font-mono), 'JetBrains Mono', ui-monospace, monospace",
           fontLigatures: true,
