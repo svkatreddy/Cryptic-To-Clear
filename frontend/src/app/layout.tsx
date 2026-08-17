@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, JetBrains_Mono, Cinzel } from "next/font/google";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
@@ -19,6 +19,12 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+});
+
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -43,7 +49,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased bg-[var(--bg)] text-[var(--ink)]`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${cinzel.variable} antialiased bg-[var(--bg)] text-[var(--ink)]`}
       >
         <AuthProvider>
           {children}

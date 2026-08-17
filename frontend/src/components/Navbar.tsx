@@ -48,13 +48,20 @@ export default function Navbar({ activeAssignment, onOpenAssignmentSelector }: N
     >
       <nav className="mx-auto max-w-7xl px-5 sm:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] shadow-[0_0_18px_rgba(184,146,255,0.35)]">
-            <Terminal className="h-4 w-4 text-[#0a0d13]" strokeWidth={2.5} />
-          </span>
-          <span className="font-display font-semibold text-[15px] sm:text-[17px] tracking-tight text-[var(--ink)]">
-            Cryptic <span className="text-gradient">to Clear</span>
-          </span>
+        <Link href="/" className="flex items-center gap-3 group py-1">
+          <img
+            src="/logo-icon.png"
+            alt="Cryptic to Clear Logo Icon"
+            className="h-10 sm:h-11 w-auto object-contain filter drop-shadow-[0_0_14px_rgba(255,255,255,0.25)] group-hover:scale-105 transition-transform"
+          />
+          <div className="flex flex-col justify-center leading-none">
+            <span className="font-logo-title font-bold text-[16px] sm:text-[18px] tracking-[0.06em] text-[var(--ink)]">
+              CRYPTIC
+            </span>
+            <span className="font-sans font-semibold text-[9px] sm:text-[10px] tracking-[0.3em] text-[var(--ink-dim)] mt-1">
+              TO CLEAR
+            </span>
+          </div>
         </Link>
 
         {/* Desktop nav */}

@@ -182,10 +182,10 @@ nums = [1, 2, 3]`,
                 <button
                   key={feat.id}
                   onClick={() => setActiveTab(idx)}
-                  className={`flex items-start gap-4 p-4 rounded-xl text-left transition-all duration-200 border ${
+                  className={`flex items-start gap-4 p-4 rounded-xl text-left transition-all duration-300 border cursor-pointer ${
                     isActive
-                      ? "glass-strong border-cyan-500/40 shadow-lg shadow-cyan-500/10 scale-[1.02]"
-                      : "glass border-white/5 hover:border-white/10 hover:bg-white/5"
+                      ? "glass-strong border-cyan-500/60 shadow-xl shadow-cyan-500/20 scale-[1.03] brightness-125"
+                      : "glass border-white/5 hover:border-[var(--syn-keyword)]/40 hover:bg-white/10 hover:scale-[1.02] hover:brightness-125 hover:shadow-lg hover:shadow-purple-500/10"
                   }`}
                 >
                   <span
@@ -211,7 +211,7 @@ nums = [1, 2, 3]`,
           </div>
 
           {/* Feature Display Card */}
-          <div className="lg:col-span-8 glass-strong rounded-2xl p-6 sm:p-10 border border-white/10 relative overflow-hidden">
+          <div className="lg:col-span-8 glass-strong rounded-2xl p-6 sm:p-10 border border-white/10 hover:border-[var(--syn-keyword)]/40 hover:brightness-110 hover:shadow-[0_25px_50px_rgba(108,182,255,0.15)] transition-all duration-300 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
               {(() => {
                 const Icon = features[activeTab].icon;
@@ -276,7 +276,7 @@ nums = [1, 2, 3]`,
       <section className="py-16 mx-auto max-w-7xl px-5 sm:px-8 w-full">
         <div className="glass rounded-2xl p-8 sm:p-12 border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 p-4 rounded-xl glass border border-white/5 hover:border-emerald-500/40 hover:scale-[1.03] hover:brightness-125 hover:shadow-[0_12px_30px_rgba(16,185,129,0.2)] transition-all duration-300 cursor-pointer">
               <span className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
                 <ShieldCheck className="h-6 w-6" />
               </span>
@@ -288,7 +288,7 @@ nums = [1, 2, 3]`,
               </div>
             </div>
 
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 p-4 rounded-xl glass border border-white/5 hover:border-cyan-500/40 hover:scale-[1.03] hover:brightness-125 hover:shadow-[0_12px_30px_rgba(6,182,212,0.2)] transition-all duration-300 cursor-pointer">
               <span className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400">
                 <Zap className="h-6 w-6" />
               </span>
@@ -300,7 +300,7 @@ nums = [1, 2, 3]`,
               </div>
             </div>
 
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 p-4 rounded-xl glass border border-white/5 hover:border-purple-500/40 hover:scale-[1.03] hover:brightness-125 hover:shadow-[0_12px_30px_rgba(168,85,247,0.2)] transition-all duration-300 cursor-pointer">
               <span className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
                 <Bot className="h-6 w-6" />
               </span>

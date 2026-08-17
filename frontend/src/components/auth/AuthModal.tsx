@@ -54,9 +54,21 @@ export default function AuthModal() {
           </button>
 
           {/* Header */}
-          <div className="text-center mb-5">
-            <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-[var(--syn-keyword)] via-[var(--syn-function)] to-[var(--syn-string)] mb-3 shadow-[0_0_20px_rgba(184,146,255,0.3)]">
-              <Terminal className="h-5 w-5 text-[#0a0d13]" strokeWidth={2.5} />
+          <div className="text-center mb-5 flex flex-col items-center">
+            <div className="flex items-center gap-3 mb-3">
+              <img
+                src="/logo-icon.png"
+                alt="Cryptic to Clear Logo Icon"
+                className="h-10 w-auto object-contain filter drop-shadow-[0_0_14px_rgba(255,255,255,0.25)]"
+              />
+              <div className="flex flex-col text-left leading-none">
+                <span className="font-logo-title font-bold text-xl tracking-[0.06em] text-[var(--ink)]">
+                  CRYPTIC
+                </span>
+                <span className="font-sans font-semibold text-[10.5px] tracking-[0.3em] text-[var(--ink-dim)] mt-1">
+                  TO CLEAR
+                </span>
+              </div>
             </div>
             <h2 className="font-display text-xl font-semibold text-[var(--ink)] tracking-tight">
               {activeTab === "login" && "Student Login"}

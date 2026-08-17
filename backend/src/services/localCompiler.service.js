@@ -41,23 +41,6 @@ function cleanupStaleTempDirectories(maxAgeMs = 15 * 60 * 1000) {
 // Run initial cleanup on startup
 cleanupStaleTempDirectories();
 
-/**
- * Safely kills a child process and all its subprocesses (e.g. process tree on Windows).
- */
-function killProcessTree(child) {
-  if (!child || !child.pid) return;
-  try {
-    if (process.platform === "win32") {
-      const { exec } = require("child_process");
-      exec(`taskkill /pid ${child.pid} /T /F`, () => {});
-    } else {
-      child.kill("SIGKILL");
-    }
-  } catch (err) {
-    logger.debug(`Error killing process tree for pid ${child.pid}: ${err.message}`);
-  }
-}
-
 
 /**
  * Extracts public or primary class name from Java source code.
@@ -198,7 +181,7 @@ async function executeJavaLocally({ sourceCode, stdin = "" }) {
 
       const timer = setTimeout(() => {
         isKilled = true;
-        killProcessTree(child);
+        child.kill("SIGKILL");
       }, timeoutMs);
 
       if (stdin && typeof stdin === "string") {
@@ -394,7 +377,7 @@ async function executeCLocally({ sourceCode, stdin = "" }) {
 
       const timer = setTimeout(() => {
         isKilled = true;
-        killProcessTree(child);
+        child.kill("SIGKILL");
       }, timeoutMs);
 
       if (stdin && typeof stdin === "string") {
@@ -469,7 +452,7 @@ async function executeCLocally({ sourceCode, stdin = "" }) {
       if (fs.existsSync(tmpDir)) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -536,7 +519,7 @@ async function executeCppLocally({ sourceCode, stdin = "" }) {
 
       const timer = setTimeout(() => {
         isKilled = true;
-        killProcessTree(child);
+        child.kill("SIGKILL");
       }, timeoutMs);
 
       if (stdin && typeof stdin === "string") {
@@ -611,7 +594,7 @@ async function executeCppLocally({ sourceCode, stdin = "" }) {
       if (fs.existsSync(tmpDir)) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -639,7 +622,7 @@ async function executePythonLocally({ sourceCode, stdin = "" }) {
 
       const timer = setTimeout(() => {
         isKilled = true;
-        killProcessTree(child);
+        child.kill("SIGKILL");
       }, timeoutMs);
 
       if (stdin && typeof stdin === "string") {
@@ -735,7 +718,7 @@ async function executePythonLocally({ sourceCode, stdin = "" }) {
       if (fs.existsSync(tmpDir)) {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { }
   }
 }
 

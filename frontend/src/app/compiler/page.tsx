@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { GripVertical } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Toolbar from "@/components/compiler/Toolbar";
 import AIPanel from "@/components/compiler/AIPanel";
-import BottomPanel, { BottomTab, TestCase } from "@/components/compiler/BottomPanel";
+import BottomPanel, { BottomTab } from "@/components/compiler/BottomPanel";
 import { EditorSettings } from "@/components/compiler/CodeEditor";
 import { LANGUAGES, LanguageConfig, getLanguage } from "@/lib/languages";
 import { getStoredTheme, Theme } from "@/lib/theme";
@@ -25,7 +26,6 @@ import {
   AssignmentItem,
 } from "@/lib/api";
 import StudentAssignmentsModal from "@/components/compiler/StudentAssignmentsModal";
-import { useAuth } from "@/context/AuthContext";
 import { changedLineNumbers } from "@/lib/diff";
 import {
   downloadTextFile,
@@ -140,9 +140,6 @@ function formatMemory(memoryKb: number | null): string {
 }
 
 export default function CompilerPage() {
-  const { user } = useAuth();
-  const isFaculty = user?.role === "faculty" || user?.role === "admin" || user?.isDemoAccount;
-
   const [language, setLanguage] = useState<string>("c");
   const [codeMap, setCodeMap] = useState<Record<string, string>>(
     defaultCodeMap()
@@ -166,7 +163,8 @@ export default function CompilerPage() {
   const [chatInput, setChatInput] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
 
-  // "Apply AI Fix" bookkeeping
+  // "Apply AI Fix" bookkeeping, keyed by the explanation message's id so
+  // each fix in the chat history tracks its own applied/undo state.
   const [fixState, setFixState] = useState<Record<string, FixState>>({});
   const [highlightLines, setHighlightLines] = useState<number[]>([]);
   const [diffTarget, setDiffTarget] = useState<ExplanationChatMessage | null>(null);
@@ -211,10 +209,7 @@ export default function CompilerPage() {
   const [exportNote, setExportNote] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-
-  // Test Cases State
-  const [testCases, setTestCases] = useState<TestCase[]>([]);
-  const activeExecutionController = useRef<AbortController | null>(null);
+  const [aiFloating, setAiFloating] = useState(false);
 
   // Student Assignment State
   const [studentAssignments, setStudentAssignments] = useState<AssignmentItem[]>([]);
@@ -236,15 +231,14 @@ export default function CompilerPage() {
   const resizing = useRef(false);
   const aiResizing = useRef(false);
 
-  // Fetch course assignments on mount (for non-faculty students)
+  // Fetch course assignments on mount
   useEffect(() => {
-    if (isFaculty) return;
     fetchStudentAssignments().then((res) => {
       if (res.success && res.data) {
         setStudentAssignments(res.data);
       }
     });
-  }, [isFaculty]);
+  }, []);
 
   const handleSelectAssignment = useCallback((asg: AssignmentItem | null) => {
     setActiveAssignment(asg);
@@ -767,61 +761,7 @@ export default function CompilerPage() {
     setConverterOpen(false);
   };
 
-  // ---- Run / Compile / Test Cases / Termination ---------------------------
-
-  const handleStopExecution = useCallback(() => {
-    if (activeExecutionController.current) {
-      activeExecutionController.current.abort();
-      activeExecutionController.current = null;
-    }
-    setIsRunning(false);
-    setIsCompiling(false);
-    setStatus("idle");
-    setErrors("Execution terminated by user.");
-  }, []);
-
-  const handleRunTestCases = useCallback(
-    async (cases: TestCase[]) => {
-      if (cases.length === 0) return;
-      setBottomTab("testcases");
-      setIsRunning(true);
-      setStatus("running");
-
-      const updated = [...cases];
-      for (let i = 0; i < updated.length; i++) {
-        updated[i] = { ...updated[i], status: "running" };
-        setTestCases([...updated]);
-
-        const result = await executeCode({
-          language,
-          sourceCode: code,
-          stdin: updated[i].input,
-        });
-
-        if (!result.success) {
-          updated[i] = {
-            ...updated[i],
-            status: "error",
-            actualOutput: "",
-            error: result.message,
-          };
-        } else {
-          const actual = (result.output || "").trim();
-          const expected = (updated[i].expectedOutput || "").trim();
-          const passed = actual === expected;
-          updated[i] = {
-            ...updated[i],
-            status: passed ? "pass" : "fail",
-            actualOutput: result.output,
-          };
-        }
-        setTestCases([...updated]);
-      }
-      setIsRunning(false);
-      setStatus("success");
-    },
-    [language, code]
-  );
+  // ---- Run / Compile ------------------------------------------------------
 
   // Track active execution session inputs so previous run data is never saved or leaked across runs
   const [sessionInput, setSessionInput] = useState("");
@@ -1181,8 +1121,8 @@ export default function CompilerPage() {
       }
     };
 
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [
     shortcutsOpen,
     diffTarget,
@@ -1199,8 +1139,8 @@ export default function CompilerPage() {
   return (
     <main className="min-h-screen bg-[var(--bg)]">
       <Navbar
-        activeAssignment={isFaculty ? null : activeAssignment}
-        onOpenAssignmentSelector={isFaculty ? undefined : () => setShowAssignmentModal(true)}
+        activeAssignment={activeAssignment}
+        onOpenAssignmentSelector={() => setShowAssignmentModal(true)}
       />
 
       <div
@@ -1211,9 +1151,9 @@ export default function CompilerPage() {
         <Toolbar
           language={language}
           onLanguageChange={handleLanguageChange}
-          allowedLanguages={!isFaculty && activeAssignment?.languageMode === "RESTRICTED" ? activeAssignment.allowedLanguages : undefined}
-          activeAssignment={isFaculty ? null : activeAssignment}
-          onSubmitAssignment={isFaculty ? undefined : handleAssignmentSubmit}
+          allowedLanguages={activeAssignment?.languageMode === "RESTRICTED" ? activeAssignment.allowedLanguages : undefined}
+          activeAssignment={activeAssignment}
+          onSubmitAssignment={handleAssignmentSubmit}
           isSubmittingAssignment={isSubmittingAssignment}
           onRun={handleRun}
           onCompile={handleCompile}
@@ -1250,8 +1190,8 @@ export default function CompilerPage() {
           onShowShortcuts={() => setShortcutsOpen(true)}
         />
 
-        {/* Active Assignment Header (Requirement 4 - Students only) */}
-        {!isFaculty && activeAssignment && (
+        {/* Active Assignment Header (Requirement 4) */}
+        {activeAssignment && (
           <div className="px-4 py-2 bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-purple-900/30 border-b border-purple-500/20 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
             <div className="flex items-center gap-3">
               <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
@@ -1304,15 +1244,6 @@ export default function CompilerPage() {
                     ? trace.steps[debugStepIndex]?.line ?? null
                     : null
                 }
-                onRun={handleRun}
-                onCompile={handleCompile}
-                onDownloadCode={handleDownloadCode}
-                onToggleAIPanel={() => setAiPanelOpen((v) => !v)}
-                onFocusAIChat={() => {
-                  setAiPanelOpen(true);
-                  setTimeout(() => document.getElementById("ai-chat-input")?.focus(), 60);
-                }}
-                onShowShortcuts={() => setShortcutsOpen(true)}
               />
             </div>
             <div style={{ height: bottomHeight }} className="shrink-0">
@@ -1327,15 +1258,11 @@ export default function CompilerPage() {
                   setStatus("idle");
                   setSessionInput("");
                 }}
-                onStopExecution={handleStopExecution}
                 isRunning={isRunning}
                 input={input}
                 onInputChange={setInput}
                 activeTab={bottomTab}
                 onTabChange={setBottomTab}
-                testCases={testCases}
-                onTestCasesChange={setTestCases}
-                onRunTestCases={handleRunTestCases}
                 onResizeStart={(e) => {
                   e.preventDefault();
                   resizing.current = true;
@@ -1344,8 +1271,8 @@ export default function CompilerPage() {
             </div>
           </div>
 
-          {/* Resizable AI Assistant Panel — desktop */}
-          {aiPanelOpen && (
+          {/* Resizable AI Assistant Panel — desktop (Docked Mode) */}
+          {aiPanelOpen && !aiFloating && (
             <>
               {/* Drag handle between Code Editor/Output & AI Panel */}
               <div
@@ -1363,6 +1290,9 @@ export default function CompilerPage() {
                 className="hidden md:block shrink-0 h-full overflow-hidden"
               >
                 <AIPanel
+                  isFloating={false}
+                  onToggleFloating={() => setAiFloating(true)}
+                  onClose={() => setAiPanelOpen(false)}
                   messages={messages}
                   busy={chatBusy}
                   inputValue={chatInput}
@@ -1381,6 +1311,38 @@ export default function CompilerPage() {
           )}
         </div>
       </div>
+
+      {/* Floating Movable Pop-up App Window for AI Explanations */}
+      <AnimatePresence>
+        {aiPanelOpen && aiFloating && (
+          <motion.div
+            drag
+            dragMomentum={false}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed z-50 top-20 right-8 w-[440px] h-[600px] max-w-[94vw] max-h-[85vh] rounded-2xl glass-strong border border-[var(--syn-keyword)]/40 shadow-[0_25px_70px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col backdrop-blur-xl"
+          >
+            <AIPanel
+              isFloating={true}
+              onToggleFloating={() => setAiFloating(false)}
+              onClose={() => setAiPanelOpen(false)}
+              messages={messages}
+              busy={chatBusy}
+              inputValue={chatInput}
+              onInputChange={setChatInput}
+              onSend={() => void sendChat(chatInput)}
+              onQuickAction={(prompt) => void sendChat(prompt)}
+              onRetry={handleRetry}
+              getFixState={getFixState}
+              onApplyFix={handleApplyFix}
+              onUndoFix={handleUndoFix}
+              onCompareChanges={handleCompareChanges}
+              inputId="ai-chat-input"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile AI overlay trigger */}
       <button
@@ -1493,7 +1455,7 @@ export default function CompilerPage() {
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {/* Student Assignment Selector Modal */}
-      {!isFaculty && showAssignmentModal && (
+      {showAssignmentModal && (
         <StudentAssignmentsModal
           assignments={studentAssignments}
           activeAssignment={activeAssignment}

@@ -48,12 +48,12 @@ export default function EditorMockup() {
       <motion.div
         initial={{ opacity: 0, scale: 0.9, x: 20 }}
         animate={{ opacity: 1, scale: 1, x: 0 }}
+        whileHover={{ scale: 1.05 }}
         transition={{ duration: 0.6, delay: 1.1, ease: "easeOut" }}
-        className="absolute -right-4 sm:-right-10 top-[46%] w-[240px] sm:w-[260px] glass rounded-lg p-4 shadow-2xl border-[var(--syn-keyword)]/30"
-        style={{ boxShadow: "0 20px 60px -15px rgba(184,146,255,0.25)" }}
+        className="absolute -right-4 sm:-right-10 top-[46%] w-[240px] sm:w-[260px] glass rounded-lg p-4 shadow-2xl border border-[var(--syn-keyword)]/40 hover:border-[var(--syn-keyword)] hover:brightness-125 hover:shadow-[0_25px_60px_rgba(184,146,255,0.35)] transition-all duration-300 cursor-pointer"
       >
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-3.5 w-3.5 text-[var(--syn-keyword)]" />
+          <Sparkles className="h-3.5 w-3.5 text-[var(--syn-keyword)] animate-pulse" />
           <span className="text-[11px] font-mono font-medium text-[var(--syn-keyword)]">
             AI Explanation
           </span>
@@ -69,8 +69,9 @@ export default function EditorMockup() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.08 }}
         transition={{ duration: 0.5, delay: 0.9 }}
-        className="absolute -left-4 sm:-left-8 top-6 flex items-center gap-1.5 glass rounded-full px-3 py-1.5"
+        className="absolute -left-4 sm:-left-8 top-6 flex items-center gap-1.5 glass rounded-full px-3 py-1.5 border border-rose-500/30 hover:border-rose-500 hover:brightness-125 hover:shadow-[0_8px_20px_rgba(244,63,94,0.3)] transition-all duration-300 cursor-pointer"
       >
         <CircleAlert className="h-3.5 w-3.5 text-[var(--syn-const)]" />
         <span className="text-[11px] font-mono text-[var(--syn-const)]">1 error found</span>
